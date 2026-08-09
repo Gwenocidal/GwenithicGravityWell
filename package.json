@@ -1,0 +1,24 @@
+{
+  "name": "gwenithic-gravity-well",
+  "productName": "Gwenithic Gravity Well",
+  "version": "0.3.0",
+  "private": true,
+  "description": "A portable continuous-universe observatory, gravity instrument, and high-resolution exposure workshop.",
+  "main": "main.js",
+  "scripts": {
+    "build": "vite build",
+    "start": "pnpm run build && electron .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.js",
+    "pack": "pnpm run build && node scripts/package.mjs"
+  },
+  "dependencies": {
+    "sharp": "0.35.3"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.2.0",
+    "electron": "43.3.0",
+    "typescript": "5.9.3",
+    "vite": "8.0.13"
+  }
+}

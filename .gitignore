@@ -1,0 +1,15 @@
+# Installed and generated dependencies
+node_modules/
+.packaging-stage/
+
+# Build and packaged application bodies
+dist-renderer/
+release/
+
+# Local observations and mutable runtime state
+captures/
+data/
+test-artifacts/
+
+# Generated diagnostics
+*.log

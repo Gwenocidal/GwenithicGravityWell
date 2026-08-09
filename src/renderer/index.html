@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; worker-src 'self' blob:;"
+    />
+    <title>Gwenithic Gravity Well</title>
+  </head>
+  <body class="menu-closed">
+    <main id="stage" aria-label="Interactive Gwenithic gravity well">
+      <canvas id="scene" aria-label="Gravity well scene"></canvas>
+      <aside id="observatory-hud" class="observatory-hud" aria-live="polite">
+        <span id="hud-mode">GRAVITY</span>
+        <strong id="hud-zoom">1.000×</strong>
+        <code id="hud-coordinate">0.500000, 0.500000</code>
+        <small><kbd>O</kbd> observer · <kbd>R</kbd> record · <kbd>P</kbd> play · <kbd>0</kbd> home</small>
+      </aside>
+    </main>
+
+    <div id="status-toast" class="status-toast" aria-live="polite" hidden>
+      <span id="status-text"></span>
+      <div class="status-track"><span id="status-progress"></span></div>
+    </div>
+
+    <section id="menu" class="menu-shell" aria-hidden="true">
+      <div class="menu-backdrop" data-close-menu></div>
+      <div class="menu-panel" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+        <header class="menu-header">
+          <div>
+            <p class="eyebrow">Gwenithic / local instrument</p>
+            <h1 id="menu-title">Gravity Well</h1>
+          </div>
+          <div class="shortcut-cluster">
+            <span><kbd>Esc</kbd> close</span>
+            <span><kbd>Space</kbd> capture</span>
+            <span><kbd>O</kbd> observe</span>
+            <span><kbd>R</kbd> record</span>
+          </div>
+        </header>
+
+        <div class="menu-grid">
+          <section class="control-section">
+            <div class="section-heading">
+              <span>01</span>
+              <div>
+                <h2>Window</h2>
+                <p>How the live instrument occupies the display.</p>
+              </div>
+            </div>
+            <label class="field-row">
+              <span>Display mode</span>
+              <select id="window-mode">
+                <option value="windowed">Windowed</option>
+                <option value="borderless">Borderless fullscreen</option>
+                <option value="fullscreen">Fullscreen</option>
+              </select>
+            </label>
+          </section>
+
+          <section class="control-section">
+            <div class="section-heading">
+              <span>02</span>
+              <div>
+                <h2>Live scene</h2>
+                <p>The actual working framebuffer. It always scales to fit without clipping.</p>
+              </div>
+            </div>
+            <label class="field-row">
+              <span>Resolution</span>
+              <select id="scene-preset">
+                <option value="1280x720">HD - 1280 × 720</option>
+                <option value="1920x1080">Full HD - 1920 × 1080</option>
+                <option value="2560x1440">QHD - 2560 × 1440</option>
+                <option value="3440x1440">Ultrawide - 3440 × 1440</option>
+                <option value="3840x2160">4K - 3840 × 2160</option>
+                <option value="5120x2880">5K - 5120 × 2880</option>
+                <option value="7680x4320">8K - 7680 × 4320</option>
+                <option value="15360x8640">16K - 15360 × 8640</option>
+                <option value="custom">Type ur desired res in here lol</option>
+              </select>
+            </label>
+            <div id="scene-custom" class="dimension-row" hidden>
+              <label><span>X pixels</span><input id="scene-width" type="number" min="320" max="32768" step="1" /></label>
+              <span class="times">×</span>
+              <label><span>Y pixels</span><input id="scene-height" type="number" min="180" max="32768" step="1" /></label>
+            </div>
+            <button id="apply-scene" class="button secondary" type="button">Apply scene resolution</button>
+            <p id="scene-note" class="fine-print"></p>
+          </section>
+
+          <section class="control-section capture-section">
+            <div class="section-heading">
+              <span>03</span>
+              <div>
+                <h2>Capture</h2>
+                <p>A separate tiled renderer. Play stays alive while the export takes its time.</p>
+              </div>
+            </div>
+            <label class="field-row">
+              <span>Scale from live scene</span>
+              <select id="capture-scale">
+                <option value="0.5">50%</option>
+                <option value="1">1×</option>
+                <option value="2">2×</option>
+                <option value="4">4×</option>
+                <option value="8">8×</option>
+                <option value="16">16× / unwise</option>
+                <option value="custom">Custom scale</option>
+              </select>
+            </label>
+            <label id="scale-custom-row" class="field-row" hidden>
+              <span>Custom multiplier</span>
+              <input id="capture-scale-custom" type="number" min="0.1" max="16" step="0.1" value="1" />
+            </label>
+            <div class="capture-readout">
+              <span>Output</span>
+              <strong id="capture-dimensions">1920 × 1080</strong>
+              <small id="capture-pixels">2.1 megapixels</small>
+            </div>
+            <div class="two-column">
+              <label class="field-row compact">
+                <span>Format</span>
+                <select id="capture-format">
+                  <option value="png">PNG / lossless</option>
+                  <option value="jpeg">JPEG</option>
+                  <option value="webp">WebP</option>
+                </select>
+              </label>
+              <label id="quality-row" class="field-row compact" hidden>
+                <span>Quality</span>
+                <input id="capture-quality" type="number" min="1" max="100" value="94" />
+              </label>
+            </div>
+            <label class="toggle-row">
+              <input id="include-cursor" type="checkbox" />
+              <span class="toggle-visual"></span>
+              <span>
+                <strong>Include cursor</strong>
+                <small>Draw a clean pointer with its tip in the central void.</small>
+              </span>
+            </label>
+            <button id="capture-now" class="button primary" type="button">Render clean capture</button>
+            <button id="cancel-capture" class="button danger" type="button" hidden>Cancel current export</button>
+            <p id="capture-note" class="fine-print"></p>
+          </section>
+
+          <section class="control-section utility-section">
+            <div class="section-heading">
+              <span>04</span>
+              <div>
+                <h2>Box</h2>
+                <p>Nothing in the scene capture includes this interface.</p>
+              </div>
+            </div>
+            <p class="path-label">Captures are written beside the app:</p>
+            <code id="capture-directory">Loading…</code>
+            <div class="button-row">
+              <button id="open-captures" class="button secondary" type="button">Open captures</button>
+              <button id="quit-app" class="button ghost" type="button">Exit app</button>
+            </div>
+          </section>
+
+          <section class="control-section observatory-section">
+            <div class="section-heading">
+              <span>05</span>
+              <div>
+                <h2>Observatory</h2>
+                <p>Travel through one continuous field. The viewport is an aperture, not the universe.</p>
+              </div>
+            </div>
+            <label class="field-row">
+              <span>Pointer mode</span>
+              <select id="interaction-mode">
+                <option value="gravity">Gravity instrument</option>
+                <option value="observe">Observer / pan + zoom</option>
+              </select>
+            </label>
+            <div class="capture-readout observer-readout">
+              <span>Aperture</span>
+              <strong id="observer-zoom">1.000×</strong>
+              <small id="observer-center">center 0.500000, 0.500000</small>
+            </div>
+            <div class="button-row">
+              <button id="observer-home" class="button secondary" type="button">Return home</button>
+              <button id="add-bookmark" class="button secondary" type="button">Bookmark this view</button>
+            </div>
+            <div id="bookmark-list" class="bookmark-list"></div>
+            <p class="fine-print">In Observer mode: wheel to zoom around the cursor; drag to pan. Bookmarks preserve center and magnification exactly.</p>
+          </section>
+
+          <section class="control-section radiance-section">
+            <div class="section-heading">
+              <span>06</span>
+              <div>
+                <h2>Radiance</h2>
+                <p>Light is evaluated before the display decides how much of it you can see.</p>
+              </div>
+            </div>
+            <label class="field-row range-row">
+              <span>Exposure <output id="exposure-value">+0.0 EV</output></span>
+              <input id="exposure" type="range" min="-5" max="5" step="0.1" value="0" />
+            </label>
+            <label class="field-row range-row">
+              <span>Spectral split <output id="spectral-value">1.00×</output></span>
+              <input id="spectral" type="range" min="0" max="2.5" step="0.05" value="1" />
+            </label>
+            <label class="field-row">
+              <span>Tone map</span>
+              <select id="tone-map">
+                <option value="aces">ACES / cinematic</option>
+                <option value="reinhard">Reinhard / soft</option>
+                <option value="linear">Linear / uncompromising</option>
+              </select>
+            </label>
+            <p class="fine-print">The current output is honest 8-bit sRGB. Linear radiance exists before tone mapping; true 16-bit and EXR are on the renderer trajectory.</p>
+          </section>
+
+          <section class="control-section timeline-section">
+            <div class="section-heading">
+              <span>07</span>
+              <div>
+                <h2>Gravitational calligraphy</h2>
+                <p>Record a gesture, replay it, or let one exposure remember many moments at once.</p>
+              </div>
+            </div>
+            <div class="timeline-status">
+              <strong id="timeline-state">No path recorded</strong>
+              <small id="timeline-detail">Press R in the scene to begin.</small>
+            </div>
+            <div class="button-row">
+              <button id="record-path" class="button primary button-flex" type="button">Record path</button>
+              <button id="play-path" class="button secondary" type="button" disabled>Play</button>
+              <button id="clear-path" class="button ghost" type="button" disabled>Clear</button>
+            </div>
+            <label class="field-row">
+              <span>Exposure samples</span>
+              <select id="temporal-samples">
+                <option value="1">1 / instant</option>
+                <option value="4">4 / trace</option>
+                <option value="8">8 / long exposure</option>
+                <option value="16">16 / dense calligraphy</option>
+                <option value="32">32 / patient</option>
+              </select>
+            </label>
+            <p class="fine-print">Long exposure is computed offline during capture. Live play remains immediate.</p>
+          </section>
+
+          <section class="control-section archive-section">
+            <div class="section-heading">
+              <span>08</span>
+              <div>
+                <h2>Universe record</h2>
+                <p>The portable journal is a local rehearsal for λ. Saved recipes are explicit observations, not hidden settings.</p>
+              </div>
+            </div>
+            <div class="button-row">
+              <button id="save-universe" class="button secondary" type="button">Save current universe</button>
+              <button id="load-universe" class="button secondary" type="button">Reload saved universe</button>
+              <button id="load-recipe" class="button secondary" type="button">Open exposure recipe</button>
+              <button id="render-recipe" class="button primary button-flex" type="button" disabled>Render loaded recipe</button>
+            </div>
+            <p id="journal-status" class="fine-print">Portable JSON for now. Native λ identity/replay and Orius orecs enter through bounded adapters later.</p>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="/app.ts"></script>
+  </body>
+</html>

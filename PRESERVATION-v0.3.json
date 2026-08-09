@@ -1,0 +1,33 @@
+{
+  "schema": "gwenithic-artifact-preservation/0.1",
+  "artifact": {
+    "name": "Gwenithic Gravity Well",
+    "version": "0.3.0",
+    "state": "Continuous Observatory",
+    "preserved_on": "2026-08-09"
+  },
+  "portable_body": {
+    "filename": "Gwenithic Gravity Well Portable v0.3.zip",
+    "workspace_path": "Archive/Coalescence/2026-08-09-pass-01/bundles/Gwenithic Gravity Well Portable v0.3.zip",
+    "byte_length": 251393649,
+    "sha256": "0FF1DFFC14957BBFC4BF3A9A240D410749FD81967D27DA40039A9D09FB3AF39A"
+  },
+  "source_boundary": {
+    "repository": "Gwenocidal/GwenithicGravityWell",
+    "tag": "gravity-well-v0.3.0-preservation",
+    "excludes": [
+      "installed dependencies",
+      "generated renderer output",
+      "packaged release directories",
+      "captures and exposure recipes",
+      "mutable local application state",
+      "test artifacts"
+    ]
+  },
+  "evidence": {
+    "validation_record": "VALIDATION-v0.3.md",
+    "trajectory": "UNIVERSE-TRAJECTORY.md",
+    "portable_manual": "PORTABLE README.txt"
+  },
+  "note": "This manifest identifies one preserved observable body and its source slice. It does not claim that either boundary exhausts the artifact."
+}

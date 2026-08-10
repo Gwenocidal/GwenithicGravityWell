@@ -26,7 +26,17 @@ const smokeZoom = process.argv.includes("--capture-test-zoom");
 const smokeCapture = process.argv.includes("--capture-test") || smokeLargeCapture || smokeHugeCapture || smokeEmptyCapture || smokeCalligraphy || smokeZoom;
 const keepSmokeCapture = process.argv.includes("--keep-capture");
 const menuSnapshot = process.argv.includes("--menu-snapshot");
+const layoutTest = process.argv.includes("--layout-test");
+const failureSnapshot = process.argv.includes("--failure-snapshot");
+const forceRendererFailure = process.argv.includes("--force-renderer-failure");
+const recipeReplayTest = process.argv.includes("--recipe-replay-test");
 const forceStreamingPng = process.argv.includes("--force-streaming-png");
+const smokeWindowArgument = process.argv.find((argument) => argument.startsWith("--smoke-window="));
+const smokeWindowMatch = smokeWindowArgument?.slice("--smoke-window=".length).match(/^(\d+)x(\d+)$/i);
+const smokeWindow = smokeWindowMatch
+  ? { width: Number(smokeWindowMatch[1]), height: Number(smokeWindowMatch[2]) }
+  : null;
+const smokeDataDirectory = path.join(os.tmpdir(), `gwenithic-gravity-well-smoke-${process.pid}`);
 
 let mainWindow = null;
 let currentMode = "windowed";
@@ -45,7 +55,7 @@ function portableRoot() {
 
 
 function dataRoot() {
-  return path.join(portableRoot(), "data");
+  return smokeMode ? smokeDataDirectory : path.join(portableRoot(), "data");
 }
 
 
@@ -140,10 +150,16 @@ async function createMainWindow(mode = appSettings.windowMode) {
   const display = displayForBounds(previousBounds);
   const isWindowed = nextMode === "windowed";
   const bounds = isWindowed
-    ? {
-        width: Math.min(appSettings.windowedBounds.width, display.workArea.width),
-        height: Math.min(appSettings.windowedBounds.height, display.workArea.height),
-      }
+    ? (() => {
+        const width = Math.min(appSettings.windowedBounds.width, display.workArea.width);
+        const height = Math.min(appSettings.windowedBounds.height, display.workArea.height);
+        return {
+          width,
+          height,
+          x: display.workArea.x + Math.max(0, Math.floor((display.workArea.width - width) / 2)),
+          y: display.workArea.y + Math.max(0, Math.floor((display.workArea.height - height) / 2)),
+        };
+      })()
     : display.bounds;
 
   currentMode = nextMode;
@@ -492,6 +508,7 @@ ipcMain.handle("app:get-info", async () => {
     captureDirectory: captureRoot(),
     maxCaptureDimension: MAX_CAPTURE_DIMENSION,
     maxCapturePixels: MAX_CAPTURE_PIXELS,
+    forceRendererFailure,
   };
 });
 
@@ -610,6 +627,103 @@ ipcMain.on("renderer:ready", async (_event, details) => {
   if (!smokeMode || smokeStarted) return;
   smokeStarted = true;
   try {
+    if (recipeReplayTest) {
+      const first = await mainWindow.webContents.executeJavaScript("window.__gravityTest.run(true)", true);
+      const recipePath = first.recipePath ?? `${first.finalPath}.gravity.json`;
+      const recipe = JSON.parse(await fs.readFile(recipePath, "utf8"));
+      const second = await mainWindow.webContents.executeJavaScript(
+        `window.__gravityTest.replay(${JSON.stringify(recipe)})`,
+        true,
+      );
+      const hashFile = async (file) => crypto.createHash("sha256").update(await fs.readFile(file)).digest("hex");
+      const firstHash = await hashFile(first.finalPath);
+      const secondHash = await hashFile(second.finalPath);
+      const firstPixels = await sharp(first.finalPath).raw().toBuffer({ resolveWithObject: true });
+      const secondPixels = await sharp(second.finalPath).raw().toBuffer({ resolveWithObject: true });
+      const sameGeometry =
+        firstPixels.info.width === secondPixels.info.width &&
+        firstPixels.info.height === secondPixels.info.height &&
+        firstPixels.info.channels === secondPixels.info.channels &&
+        firstPixels.data.length === secondPixels.data.length;
+      let absoluteDifference = 0;
+      let maximumDifference = 0;
+      let differingChannels = 0;
+      if (sameGeometry) {
+        for (let index = 0; index < firstPixels.data.length; index += 1) {
+          const difference = Math.abs(firstPixels.data[index] - secondPixels.data[index]);
+          absoluteDifference += difference;
+          maximumDifference = Math.max(maximumDifference, difference);
+          if (difference > 0) differingChannels += 1;
+        }
+      }
+      const meanAbsoluteDifference = sameGeometry
+        ? absoluteDifference / firstPixels.data.length
+        : Number.POSITIVE_INFINITY;
+      const ok = sameGeometry && meanAbsoluteDifference <= 0.05 && maximumDifference <= 16;
+      console.log(JSON.stringify({
+        ready: details,
+        recipeReplay: {
+          ok,
+          firstHash,
+          secondHash,
+          byteIdentical: firstHash === secondHash,
+          sameGeometry,
+          meanAbsoluteDifference,
+          maximumDifference,
+          differingChannels,
+          totalChannels: firstPixels.data.length,
+          schema: recipe.schema,
+        },
+      }));
+      if (!keepSmokeCapture) {
+        for (const file of [first.finalPath, recipePath, second.finalPath, second.recipePath ?? `${second.finalPath}.gravity.json`]) {
+          await fs.rm(file, { force: true }).catch(() => {});
+        }
+      }
+      app.exit(ok ? 0 : 1);
+      return;
+    }
+    if (layoutTest) {
+      const result = await mainWindow.webContents.executeJavaScript(
+        `(() => {
+          const menu = document.getElementById("menu");
+          const panel = menu.querySelector(".menu-panel");
+          menu.style.transition = "none";
+          window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+          document.body.offsetHeight;
+          const viewport = { width: window.innerWidth, height: window.innerHeight };
+          const panelRect = panel.getBoundingClientRect();
+          const horizontalOverflow = panel.scrollWidth > panel.clientWidth + 1;
+          const outsideViewport = panelRect.left < -1 || panelRect.right > viewport.width + 1;
+          const bodyOverflow = document.documentElement.scrollWidth > viewport.width + 1;
+          const primaryControls = [...panel.querySelectorAll("button, select, input")]
+            .filter((element) => !element.hidden && element.getClientRects().length > 0);
+          const escapedControls = primaryControls
+            .map((element) => ({ id: element.id, rect: element.getBoundingClientRect() }))
+            .filter(({ rect }) => rect.right > panelRect.right + 1 || rect.left < panelRect.left - 1)
+            .map(({ id }) => id || "unnamed-control");
+          return {
+            ok: !horizontalOverflow && !outsideViewport && !bodyOverflow && escapedControls.length === 0,
+            viewport,
+            panel: {
+              left: panelRect.left,
+              right: panelRect.right,
+              width: panelRect.width,
+              clientWidth: panel.clientWidth,
+              scrollWidth: panel.scrollWidth
+            },
+            horizontalOverflow,
+            outsideViewport,
+            bodyOverflow,
+            escapedControls
+          };
+        })()`,
+        true,
+      );
+      console.log(JSON.stringify({ ready: details, layout: result }));
+      app.exit(result?.ok ? 0 : 1);
+      return;
+    }
     if (menuSnapshot) {
       await mainWindow.webContents.executeJavaScript(
         `document.getElementById("menu").style.transition = "none";
@@ -657,11 +771,37 @@ ipcMain.on("renderer:ready", async (_event, details) => {
 
 ipcMain.on("renderer:failure", (_event, message) => {
   console.error(`Renderer initialization failed: ${message}`);
-  if (smokeMode) app.exit(1);
+  if (!smokeMode) return;
+  if (failureSnapshot && mainWindow && !mainWindow.isDestroyed()) {
+    smokeStarted = true;
+    setTimeout(async () => {
+      try {
+        const artifactDirectory = path.join(portableRoot(), "test-artifacts");
+        const artifactPath = path.join(artifactDirectory, "failure-surface.png");
+        await fs.mkdir(artifactDirectory, { recursive: true });
+        const image = await mainWindow.webContents.capturePage();
+        await fs.writeFile(artifactPath, image.toPNG());
+        console.log(JSON.stringify({ failureSnapshot: artifactPath, message }));
+        app.exit(0);
+      } catch (error) {
+        console.error(error);
+        app.exit(1);
+      }
+    }, 180);
+    return;
+  }
+  app.exit(1);
 });
 
 app.whenReady().then(async () => {
   await loadSettings();
+  if (smokeWindow) {
+    appSettings.windowMode = "windowed";
+    appSettings.windowedBounds = {
+      width: Math.max(640, Math.round(smokeWindow.width)),
+      height: Math.max(360, Math.round(smokeWindow.height)),
+    };
+  }
   await createMainWindow(appSettings.windowMode);
 });
 
@@ -673,4 +813,5 @@ app.on("before-quit", () => {
   for (const job of captureJobs.values()) {
     fs.rm(job.directory, { recursive: true, force: true }).catch(() => {});
   }
+  if (smokeMode) fs.rm(smokeDataDirectory, { recursive: true, force: true }).catch(() => {});
 });

@@ -16,6 +16,12 @@ Its v0.3 core is deterministic and resolution independent: pixels are samples of
 
 This repository boundary is the mutable source slice. It does not claim to contain the whole artifact: generated releases, captures, local state, and institutional preservation copies live outside Git and are identified by manifests.
 
+## Current release candidate
+
+`v0.3.1` is the stranger-body hardening descendant of the preserved v0.3.0 origin. It adds responsive and failure-state assurance, a portable artifact envelope, and release verification without changing the continuous-universe kernel or its v0.3 schemas.
+
+The candidate remains private and carries no public reuse grant until Gwen explicitly approves its application, documentation, media, schema, and output-license boundaries.
+
 ## Development
 
 Requirements are installed locally with pnpm. The packaged Windows release includes its runtime and needs no separate installation.

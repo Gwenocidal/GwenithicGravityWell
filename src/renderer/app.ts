@@ -136,6 +136,10 @@ const loadUniverseButton = requireElement<HTMLButtonElement>("load-universe");
 const journalStatus = requireElement<HTMLElement>("journal-status");
 const loadRecipeButton = requireElement<HTMLButtonElement>("load-recipe");
 const renderRecipeButton = requireElement<HTMLButtonElement>("render-recipe");
+const fatalShell = requireElement<HTMLElement>("fatal-shell");
+const fatalSummary = requireElement<HTMLElement>("fatal-summary");
+const fatalTechnical = requireElement<HTMLElement>("fatal-technical");
+const fatalQuit = requireElement<HTMLButtonElement>("fatal-quit");
 
 let settings = loadSettings();
 let appInfo: GravityAppInfo;
@@ -559,7 +563,21 @@ class LiveGravityWell {
 }
 
 
-const live = new LiveGravityWell();
+let live!: LiveGravityWell;
+
+function showFatalError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const technical = error instanceof Error ? error.stack ?? error.message : String(error);
+  const webglFailure = /webgl|shader|graphics|gpu/i.test(message);
+  fatalSummary.textContent = webglFailure
+    ? "The application started, but this graphics system could not create the WebGL surface used by the Gravity Well."
+    : "The application started, but the instrument could not finish preparing its live field.";
+  fatalTechnical.textContent = technical;
+  fatalShell.hidden = false;
+  document.body.classList.add("fatal-error");
+  document.body.classList.remove("menu-closed", "menu-open");
+  fatalQuit.addEventListener("click", () => window.gravityAPI.quit(), { once: true });
+}
 
 function formatZoom(value: number) {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(3)}M×`;
@@ -987,6 +1005,8 @@ function isTypingTarget(target: EventTarget | null) {
 
 async function initialize() {
   appInfo = await window.gravityAPI.getAppInfo();
+  if (appInfo.forceRendererFailure) throw new Error("WebGL is unavailable on this system (forced smoke-test failure)." );
+  live = new LiveGravityWell();
   windowMode.value = appInfo.windowMode;
   captureDirectory.textContent = appInfo.captureDirectory;
   syncSceneInputs();
@@ -1234,7 +1254,36 @@ async function initialize() {
           ? { center: { x: 0.786, y: 0.558 }, zoom: 96 }
           : { center: { x: 0.5, y: 0.5 }, zoom: 1 },
       });
-      return { ...base, finalPath: result.finalPath };
+      return { ...base, finalPath: result.finalPath, recipePath: result.recipePath };
+    },
+    async replay(rawRecipe: unknown) {
+      const candidate = rawRecipe as ExposureRecipe;
+      if (candidate?.schema !== "gwenithic-gravity-exposure/0.3" || candidate.universe?.schema !== "gwenithic-gravity-universe/0.3") {
+        throw new Error("The smoke replay did not receive a supported Gravity Well exposure recipe.");
+      }
+      const universe = normalizeUniverseState(candidate.universe);
+      journal = new UniverseJournal(structuredClone(universe));
+      syncUniverseControls();
+      syncTimelineControls();
+      live.applyUniverseState();
+      return captureScene({
+        width: candidate.output.width,
+        height: candidate.output.height,
+        scale: 1,
+        format: candidate.output.format,
+        quality: candidate.output.quality,
+        includeCursor: candidate.output.includeCursor,
+        temporalSamples: candidate.output.temporalSamples,
+        pointer: universe.well.pointer,
+        motion: universe.well.motion,
+        strength: universe.well.strength,
+        time: universe.scene.time,
+        observer: universe.observer,
+        radiance: universe.radiance,
+        seed: universe.scene.seed,
+        path: universe.timeline.path,
+        duration: universe.timeline.duration,
+      });
     },
   };
 
@@ -1249,6 +1298,6 @@ async function initialize() {
 
 void initialize().catch((error) => {
   console.error(error);
+  showFatalError(error);
   window.gravityAPI.reportFailure(error instanceof Error ? error.stack ?? error.message : String(error));
-  setStatus(`App initialization failed: ${error instanceof Error ? error.message : String(error)}`, 0);
 });

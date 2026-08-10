@@ -53,6 +53,9 @@ test("observations are journaled, reproducible, and distinct from semantic autho
   assert.match(universe, /makeExposureRecipe/);
   assert.match(main, /\.gravity\.json/);
   assert.match(main, /atomicWriteText/);
+  assert.match(main, /recipeReplayTest/);
+  assert.match(main, /meanAbsoluteDifference <= 0\.05/);
+  assert.match(main, /maximumDifference <= 16/);
   assert.match(trajectory, /The ideal is not absent\. It is inexhaustible\./);
   assert.match(trajectory, /It does \*\*not\*\* claim to be λ/);
 });
@@ -65,7 +68,38 @@ test("packager includes the field manual and writable portable folders", () => {
   assert.match(pack, /VALIDATION-v0\.3\.md/);
   assert.match(pack, /pnpm-lock\.yaml/);
   assert.match(pack, /--frozen-lockfile/);
-  assert.match(pack, /Preserve the exact manifest beside its lockfile/);
+  assert.match(pack, /SOURCE-package\.json/);
+  assert.match(pack, /delete runtimeManifest\.devDependencies/);
+  assert.match(pack, /truthful runtime-only manifest/);
   assert.match(pack, /captures/);
   assert.match(pack, /data/);
+  for (const file of [
+    "ARTIFACT.md",
+    "QUICKSTART.txt",
+    "KNOWN-LIMITS.md",
+    "RETURN.md",
+    "LICENSE-PENDING.md",
+    "THIRD-PARTY-NOTICES.md",
+    "artifact.json",
+    "VALIDATION-v0.3.1.md",
+  ]) {
+    assert.ok(fs.existsSync(path.join(root, file)), file);
+    assert.match(pack, new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(pack, /examples/);
+});
+
+test("candidate envelope names lineage without manufacturing public permission", () => {
+  const packageManifest = JSON.parse(read("package.json"));
+  const artifact = JSON.parse(read("artifact.json"));
+  const example = JSON.parse(read("examples/home-aperture.gravity.json"));
+  assert.equal(packageManifest.version, "0.3.1");
+  assert.equal(artifact.schema, "gwenithic.artifact/0");
+  assert.equal(artifact.artifact_id, "gwenithic.atelier.gravity-well");
+  assert.equal(artifact.version, packageManifest.version);
+  assert.equal(artifact.lineage.relation, "descends-from");
+  assert.equal(artifact.lineage.parents[0].version, "0.3.0");
+  assert.equal(artifact.licenses.public_grant, false);
+  assert.equal(example.schema, "gwenithic-gravity-exposure/0.3");
+  assert.equal(example.universe.schema, "gwenithic-gravity-universe/0.3");
 });

@@ -1,0 +1,52 @@
+{
+  "schema": "gwenithic.artifact/0",
+  "artifact_id": "gwenithic.atelier.gravity-well",
+  "version": "0.3.1",
+  "title": "The Gwenithic Gravity Well",
+  "kind": "interactive-generative-instrument",
+  "state": "private-release-candidate",
+  "lineage": {
+    "relation": "descends-from",
+    "parents": [
+      {
+        "artifact_id": "gwenithic.atelier.gravity-well",
+        "version": "0.3.0",
+        "source_tag": "gravity-well-v0.3.0-preservation"
+      }
+    ]
+  },
+  "state_schemas": {
+    "universe": "gwenithic-gravity-universe/0.3",
+    "exposure": "gwenithic-gravity-exposure/0.3"
+  },
+  "doors": [
+    "observe",
+    "record",
+    "reproduce",
+    "carry",
+    "inspect"
+  ],
+  "bodies": [],
+  "recipes": [
+    {
+      "role": "home-aperture",
+      "path": "examples/home-aperture.gravity.json"
+    }
+  ],
+  "evidence": [
+    {
+      "role": "validation",
+      "path": "VALIDATION-v0.3.1.md"
+    }
+  ],
+  "licenses": {
+    "status": "pending-approval",
+    "public_grant": false,
+    "boundary": "LICENSE-PENDING.md"
+  },
+  "known_limits": [
+    "KNOWN-LIMITS.md"
+  ],
+  "privacy": "private-candidate-publication-not-authorized"
+}
+

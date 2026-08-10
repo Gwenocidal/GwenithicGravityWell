@@ -6,6 +6,7 @@ type GravityAppInfo = {
   captureDirectory: string;
   maxCaptureDimension: number;
   maxCapturePixels: number;
+  forceRendererFailure: boolean;
 };
 
 type GravityApi = {
@@ -28,5 +29,6 @@ interface Window {
   gravityAPI: GravityApi;
   __gravityTest: {
     run: (capture: boolean | "large" | "huge" | "empty" | "calligraphy" | "zoom") => Promise<Record<string, unknown>>;
+    replay: (recipe: unknown) => Promise<{ finalPath: string; recipePath?: string }>;
   };
 }

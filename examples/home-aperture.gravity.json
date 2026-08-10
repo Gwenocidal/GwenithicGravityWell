@@ -1,0 +1,50 @@
+{
+  "schema": "gwenithic-gravity-exposure/0.3",
+  "renderer": "continuous-observatory-0.3",
+  "createdAt": "2026-08-09T21:45:00.000Z",
+  "universe": {
+    "schema": "gwenithic-gravity-universe/0.3",
+    "renderer": "continuous-observatory-0.3",
+    "scene": {
+      "handle": "gravity_scene_000001",
+      "seed": 1819635297,
+      "time": 1.25
+    },
+    "observer": {
+      "center": { "x": 0.5, "y": 0.5 },
+      "zoom": 1
+    },
+    "well": {
+      "pointer": { "x": 0.5, "y": 0.5 },
+      "motion": { "x": 0, "y": 0 },
+      "strength": 1
+    },
+    "radiance": {
+      "exposure": 0,
+      "spectral": 1,
+      "toneMap": "aces"
+    },
+    "timeline": {
+      "duration": 0,
+      "playhead": 0,
+      "looping": false,
+      "path": []
+    },
+    "bookmarks": []
+  },
+  "output": {
+    "width": 1920,
+    "height": 1080,
+    "format": "png",
+    "quality": 94,
+    "includeCursor": false,
+    "temporalSamples": 1
+  },
+  "approximation": {
+    "projection": "continuous-procedural-webgl",
+    "precision": "highp-if-available",
+    "outputEncoding": "srgb-8",
+    "note": "Linear radiance is tone-mapped into an 8-bit sRGB observation. The scene itself is continuous and resolution independent within its declared evaluator and numerical precision."
+  }
+}
+

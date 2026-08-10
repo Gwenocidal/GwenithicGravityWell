@@ -1,0 +1,20 @@
+GWENITHIC GRAVITY WELL — QUICK START
+
+1. Extract the complete ZIP before running it.
+2. Keep the EXE and every neighboring folder together.
+3. Double-click "Gwenithic Gravity Well.exe".
+4. Move the mouse through the field.
+5. Press Esc for controls and Space for a clean capture.
+6. Press O to switch between the gravity instrument and observer travel.
+
+The application needs no installer, account, network connection, or separately
+installed runtime. It writes settings, captures, recipes, and saved universe
+state only inside this portable folder.
+
+If the live field cannot open, the application will show a plain graphics
+failure page. Try updating the GPU driver and avoid launching through remote or
+virtual display software. The technical detail can be expanded for diagnosis.
+
+This is a private v0.3.1 release candidate. Public copying and redistribution
+terms have not yet been granted. See LICENSE-PENDING.md.
+

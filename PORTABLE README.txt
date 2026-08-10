@@ -1,8 +1,11 @@
 GWENITHIC GRAVITY WELL
-Portable build 0.3 — Continuous Observatory
+Portable build 0.3.1 — Continuous Observatory release candidate
 
 This folder is the application. No installation, account, network connection,
 or separately installed runtime is required.
+
+This candidate is not yet a public release. Read LICENSE-PENDING.md before
+copying or redistributing it.
 
 START
   Double-click "Gwenithic Gravity Well.exe".

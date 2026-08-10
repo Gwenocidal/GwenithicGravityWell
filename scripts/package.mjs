@@ -39,6 +39,7 @@ const carryingFiles = [
   "artifact.json",
   "UNIVERSE-TRAJECTORY.md",
   "MULTISCALE-LIGHT-FIELD-FLIGHT.md",
+  "COSMIC-MORPHOLOGY-FLIGHT.md",
   "VALIDATION-v0.3.md",
   "VALIDATION-v0.3.1.md",
 ];

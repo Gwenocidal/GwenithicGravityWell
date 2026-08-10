@@ -38,7 +38,7 @@ Pan and exponential zoom through the live universe. Show world position, magnifi
 
 Replace fixed raster star planes with deterministic analytic and procedural evaluators: hierarchical star populations, analytic orbit curves, haze, trajectories, core radiance, and lensing. Details are stable under tiling and independent of output resolution. Future evaluators may include particle catalogs, imported datasets, and λ-resident semantic objects without changing projection law.
 
-**Current development flight:** `continuous-observatory-light-field-0.3.2` adds a deterministic cloud/filament/void population law, clustered HDR stellar emitters, and energy-aware orbit emitters. The implementation and convergence evidence are recorded in `MULTISCALE-LIGHT-FIELD-FLIGHT.md`. The next boundary is a versioned `MatterState` that moves these Genesis laws from shader constants into the alterable core bundle.
+**Current development flight:** `continuous-observatory-lunalisk-field-0.3.3` replaces the centered orbital diagram with a relational Lunalisk phase-defect, separates ultra-wide web, projected-galaxy, regional-nebula, and deep-detail regimes, and grounds the default observation palette. The evidence and reference boundary are recorded in `COSMIC-MORPHOLOGY-FLIGHT.md`; the earlier emitter work remains in `MULTISCALE-LIGHT-FIELD-FLIGHT.md`. The next architectural boundary is still a versioned `MatterState` that moves these Genesis laws from shader constants into the alterable core bundle.
 
 ### 3. Reproducible exposures
 

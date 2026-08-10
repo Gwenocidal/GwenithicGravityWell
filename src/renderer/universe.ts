@@ -1,7 +1,7 @@
 import type { Vec2 } from "./engine";
 
 export const UNIVERSE_SCHEMA = "gwenithic-gravity-universe/0.3" as const;
-export const RENDERER_VERSION = "continuous-observatory-light-field-0.3.2" as const;
+export const RENDERER_VERSION = "continuous-observatory-lunalisk-field-0.3.3" as const;
 
 export type ToneMap = "aces" | "reinhard" | "linear";
 
@@ -119,7 +119,7 @@ export function normalizeObserver(value: ObserverState): ObserverState {
       x: clamp(finite(value?.center?.x, 0.5), -1_000_000, 1_000_000),
       y: clamp(finite(value?.center?.y, 0.5), -1_000_000, 1_000_000),
     },
-    zoom: clamp(finite(value?.zoom, 1), 0.125, 1_048_576),
+    zoom: clamp(finite(value?.zoom, 1), 0.015625, 1_048_576),
   };
 }
 
@@ -317,7 +317,7 @@ export function zoomObserverAt(
   aspect: number,
 ): ObserverState {
   const before = screenToWorld(screen, observer, aspect);
-  const zoom = clamp(observer.zoom * factor, 0.125, 1_048_576);
+  const zoom = clamp(observer.zoom * factor, 0.015625, 1_048_576);
   const provisional = { center: observer.center, zoom };
   const after = screenToWorld(screen, provisional, aspect);
   return normalizeObserver({

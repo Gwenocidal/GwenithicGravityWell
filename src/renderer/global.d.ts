@@ -28,7 +28,8 @@ type GravityApi = {
 interface Window {
   gravityAPI: GravityApi;
   __gravityTest: {
-    run: (capture: boolean | "large" | "huge" | "empty" | "calligraphy" | "zoom") => Promise<Record<string, unknown>>;
+    run: (capture: boolean | "large" | "huge" | "empty" | "calligraphy" | "zoom" | "far" | "ultra" | "deep") => Promise<Record<string, unknown>>;
     replay: (recipe: unknown) => Promise<{ finalPath: string; recipePath?: string }>;
+    compileRegimes: () => string[];
   };
 }

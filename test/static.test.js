@@ -55,7 +55,7 @@ test("observations are journaled, reproducible, and distinct from semantic autho
   const trajectory = read("UNIVERSE-TRAJECTORY.md");
 
   assert.match(universe, /gwenithic-gravity-universe\/0\.3/);
-  assert.match(universe, /continuous-observatory-light-field-0\.3\.2/);
+  assert.match(universe, /continuous-observatory-lunalisk-field-0\.3\.3/);
   assert.match(universe, /class UniverseJournal/);
   assert.match(universe, /requestId/);
   assert.match(universe, /makeExposureRecipe/);
@@ -64,6 +64,10 @@ test("observations are journaled, reproducible, and distinct from semantic autho
   assert.match(main, /recipeReplayTest/);
   assert.match(main, /meanAbsoluteDifference <= 0\.05/);
   assert.match(main, /maximumDifference <= 16/);
+  assert.match(app, /exposureUniverse\.scene\.time = snapshot\.time/);
+  assert.match(app, /exposureUniverse\.well\.pointer = structuredClone\(snapshot\.pointer\)/);
+  assert.match(app, /exposureUniverse\.well\.motion = structuredClone\(snapshot\.motion\)/);
+  assert.match(app, /exposureUniverse\.well\.strength = snapshot\.strength/);
   assert.match(app, /Exact replay is disabled because this body uses/);
   assert.match(trajectory, /The ideal is not absent\. It is inexhaustible\./);
   assert.match(trajectory, /It does \*\*not\*\* claim to be λ/);
@@ -75,6 +79,7 @@ test("packager includes the field manual and writable portable folders", () => {
   assert.match(pack, /PORTABLE README\.txt/);
   assert.match(pack, /UNIVERSE-TRAJECTORY\.md/);
   assert.match(pack, /MULTISCALE-LIGHT-FIELD-FLIGHT\.md/);
+  assert.match(pack, /COSMIC-MORPHOLOGY-FLIGHT\.md/);
   assert.match(pack, /VALIDATION-v0\.3\.md/);
   assert.match(pack, /pnpm-lock\.yaml/);
   assert.match(pack, /--frozen-lockfile/);

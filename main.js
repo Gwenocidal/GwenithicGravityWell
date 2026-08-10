@@ -23,13 +23,17 @@ const smokeHugeCapture = process.argv.includes("--capture-test-huge");
 const smokeEmptyCapture = process.argv.includes("--capture-test-empty");
 const smokeCalligraphy = process.argv.includes("--capture-test-calligraphy");
 const smokeZoom = process.argv.includes("--capture-test-zoom");
-const smokeCapture = process.argv.includes("--capture-test") || smokeLargeCapture || smokeHugeCapture || smokeEmptyCapture || smokeCalligraphy || smokeZoom;
+const smokeFar = process.argv.includes("--capture-test-far");
+const smokeUltra = process.argv.includes("--capture-test-ultra");
+const smokeDeep = process.argv.includes("--capture-test-deep");
+const smokeCapture = process.argv.includes("--capture-test") || smokeLargeCapture || smokeHugeCapture || smokeEmptyCapture || smokeCalligraphy || smokeZoom || smokeFar || smokeUltra || smokeDeep;
 const keepSmokeCapture = process.argv.includes("--keep-capture");
 const menuSnapshot = process.argv.includes("--menu-snapshot");
 const layoutTest = process.argv.includes("--layout-test");
 const failureSnapshot = process.argv.includes("--failure-snapshot");
 const forceRendererFailure = process.argv.includes("--force-renderer-failure");
 const recipeReplayTest = process.argv.includes("--recipe-replay-test");
+const compileRegimeTest = process.argv.includes("--compile-regime-test");
 const forceStreamingPng = process.argv.includes("--force-streaming-png");
 const smokeWindowArgument = process.argv.find((argument) => argument.startsWith("--smoke-window="));
 const smokeWindowMatch = smokeWindowArgument?.slice("--smoke-window=".length).match(/^(\d+)x(\d+)$/i);
@@ -627,6 +631,15 @@ ipcMain.on("renderer:ready", async (_event, details) => {
   if (!smokeMode || smokeStarted) return;
   smokeStarted = true;
   try {
+    if (compileRegimeTest) {
+      const regimes = await mainWindow.webContents.executeJavaScript(
+        "window.__gravityTest.compileRegimes()",
+        true,
+      );
+      console.log(JSON.stringify({ ready: details, compiledRegimes: regimes }));
+      app.exit(regimes.length === 7 ? 0 : 1);
+      return;
+    }
     if (recipeReplayTest) {
       const first = await mainWindow.webContents.executeJavaScript("window.__gravityTest.run(true)", true);
       const recipePath = first.recipePath ?? `${first.finalPath}.gravity.json`;
@@ -750,8 +763,14 @@ ipcMain.on("renderer:ready", async (_event, details) => {
              : smokeCalligraphy
                ? '"calligraphy"'
                : smokeZoom
-                 ? '"zoom"'
-             : smokeEmptyCapture
+                  ? '"zoom"'
+                  : smokeFar
+                    ? '"far"'
+                    : smokeUltra
+                      ? '"ultra"'
+                      : smokeDeep
+                        ? '"deep"'
+              : smokeEmptyCapture
               ? '"empty"'
               : smokeCapture ? "true" : "false"
       })`,

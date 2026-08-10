@@ -828,7 +828,11 @@ async function captureScene(overrides: CaptureOverrides = {}) {
   const temporalSampleCount = snapshot.path.length > 1 ? requestedTemporalSamples : 1;
   const exposureUniverse = live.universeSnapshot();
   exposureUniverse.scene.seed = snapshot.seed;
+  exposureUniverse.scene.time = snapshot.time;
   exposureUniverse.observer = structuredClone(snapshot.observer);
+  exposureUniverse.well.pointer = structuredClone(snapshot.pointer);
+  exposureUniverse.well.motion = structuredClone(snapshot.motion);
+  exposureUniverse.well.strength = snapshot.strength;
   exposureUniverse.radiance = structuredClone(snapshot.radiance);
   exposureUniverse.timeline.path = structuredClone(snapshot.path);
   exposureUniverse.timeline.duration = snapshot.duration;
@@ -1223,7 +1227,10 @@ async function initialize() {
   });
 
   window.__gravityTest = {
-    async run(withCapture: boolean | "large" | "huge" | "empty" | "calligraphy" | "zoom") {
+    compileRegimes() {
+      return live.renderer.compileScaleRegimesForTest();
+    },
+    async run(withCapture: boolean | "large" | "huge" | "empty" | "calligraphy" | "zoom" | "far" | "ultra" | "deep") {
       const base = {
         ok: true,
         renderer: "webgl",
@@ -1236,15 +1243,18 @@ async function initialize() {
       const empty = withCapture === "empty";
       const calligraphy = withCapture === "calligraphy";
       const zoom = withCapture === "zoom";
+      const far = withCapture === "far";
+      const ultra = withCapture === "ultra";
+      const deep = withCapture === "deep";
       const result = await captureScene({
-        width: huge ? 30_720 : large ? 2560 : 640,
-        height: huge ? 17_280 : large ? 1440 : 360,
+        width: huge ? 30_720 : large || far || ultra || deep ? 2560 : 640,
+        height: huge ? 17_280 : large || far || ultra || deep ? 1440 : 360,
         scale: huge ? 2 : 1,
         format: "png",
         quality: 90,
         includeCursor: !empty,
-        tileSize: huge ? 2048 : large ? 1024 : 2048,
-        tileHeight: huge || large ? 512 : 2048,
+        tileSize: huge ? 2048 : large || far || ultra || deep ? 1024 : 2048,
+        tileHeight: huge || large || far || ultra || deep ? 512 : 2048,
         pointer: empty ? { x: 0.12, y: 0.12 } : { x: 0.5, y: 0.5 },
         motion: empty ? { x: 0.3, y: -0.12 } : { x: 0, y: 0 },
         strength: 1,
@@ -1258,7 +1268,13 @@ async function initialize() {
         ] : [],
         observer: zoom
           ? { center: { x: 0.786, y: 0.558 }, zoom: 96 }
-          : { center: { x: 0.5, y: 0.5 }, zoom: 1 },
+          : far
+            ? { center: { x: 0.5, y: 0.5 }, zoom: 0.18 }
+            : ultra
+              ? { center: { x: 0.5, y: 0.5 }, zoom: 0.03125 }
+              : deep
+                ? { center: { x: 0.5, y: 0.5 }, zoom: 384 }
+                : { center: { x: 0.5, y: 0.5 }, zoom: 1 },
       });
       return { ...base, finalPath: result.finalPath, recipePath: result.recipePath };
     },

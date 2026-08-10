@@ -1,10 +1,10 @@
 # Gravity Well v0.3.1 — Known Limits
 
-This document travels with the candidate so its edges remain as visible as its strongest images.
+This document travels with the release so its edges remain as visible as its strongest images.
 
 ## Platform and trust
 
-- The packaged candidate targets Windows x64.
+- The packaged release targets Windows x64.
 - It may be unsigned. Windows reputation or antivirus systems may warn about an unfamiliar executable. Verify the published SHA-256 and source coordinate; do not treat suppression of a warning as verification.
 - The portable folder must remain writable for settings, captures, recipes, caches, and saved universe state.
 - The live renderer requires WebGL and a compatible graphics driver. A plain failure surface appears when initialization cannot complete.
@@ -36,7 +36,7 @@ This document travels with the candidate so its edges remain as visible as its s
 
 ## Publication
 
-- v0.3.1 is currently a private release candidate.
-- No public application, documentation, media, schema, or exemplar license is granted by this file.
-- A future public release must replace the pending boundary with explicit approved terms and preserve third-party notices.
-
+- v0.3.1 is the first public Atelier body.
+- The executable is currently unsigned. Its published SHA-256 authenticates bytes only after the observer obtains that hash through a trusted path; it is not code signing.
+- Public permissions are split across application source, documentation and marked exemplars, schemas and generic fixtures, creator-controlled outputs, marks, and third-party bodies. `PUBLICATION.md` is the map.
+- The initial download and source repository are carried through GitHub. The Atelier encounter is carried through OpenAI Sites. Neither host is asserted to define the Artifact.

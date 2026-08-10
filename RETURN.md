@@ -1,6 +1,6 @@
 # Returning a Trace
 
-This is the proposed manual return protocol for the first Atelier experiment. It is not an automated upload agreement and does not authorize public use merely because a body was sent.
+This is the manual return protocol for the first Atelier experiment. It is not an automated upload agreement and does not authorize public use merely because a body was sent.
 
 ## What may return
 
@@ -17,6 +17,7 @@ Do not send credentials, private conversations, personal data belonging to someo
 Name or chosen attribution:
 Preferred relation: observation / instrument / fork / uncertain
 Parent artifact and version, if known:
+Parent release coordinate, if known:
 May Gwenithic inspect this privately? yes / no
 May Gwenithic preserve a private working copy? yes / no
 May Gwenithic publish it? yes / no / ask me again
@@ -32,7 +33,10 @@ Anything you want another observer to know:
 - Gwenithic will not invent a license when none was supplied.
 - The sender's words should travel with the returned body when their limits or position matter.
 - A relation may remain uncertain rather than being forced into a fork hierarchy.
-- Public presentation requires an explicit later decision until the intake protocol is adopted.
+- Public presentation requires explicit permission even when the returned body's existence is already public.
 
-Before a public return address exists, use only the channel through which Gwen or Gwenithic deliberately provided the candidate.
+## First public return door
 
+The public source repository accepts a **Return a public trace** issue for bodies that are already public. A GitHub issue is itself public. Do not use it for a private body, private context, credentials, personal data, or material whose visibility is uncertain.
+
+The site does not yet operate a private upload surface. Before such a door exists, use only a channel through which Gwen or Gwenithic deliberately invited a private return.

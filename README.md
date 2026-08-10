@@ -16,11 +16,11 @@ Its v0.3 core is deterministic and resolution independent: pixels are samples of
 
 This repository boundary is the mutable source slice. It does not claim to contain the whole artifact: generated releases, captures, local state, and institutional preservation copies live outside Git and are identified by manifests.
 
-## Current release candidate
+## Current public release
 
-`v0.3.1` is the stranger-body hardening descendant of the preserved v0.3.0 origin. It adds responsive and failure-state assurance, a portable artifact envelope, and release verification without changing the continuous-universe kernel or its v0.3 schemas.
+`v0.3.1` is the first public Atelier body and the stranger-body hardening descendant of the preserved v0.3.0 origin. It adds responsive and failure-state assurance, a portable artifact envelope, public permissions, and release verification without changing the continuous-universe kernel or its v0.3 schemas.
 
-The candidate remains private and carries no public reuse grant until Gwen explicitly approves its application, documentation, media, schema, and output-license boundaries.
+The application source is MIT-licensed. Gwenithic-authored documentation and marked exemplars use CC BY 4.0. Schemas and generic fixtures use CC0. Outputs remain creator-controlled unless their maker chooses otherwise. Read `PUBLICATION.md` before redistributing a mixed artifact body.
 
 ## Development
 
@@ -45,4 +45,6 @@ pnpm run pack
 
 ## Publication and reuse
 
-This is currently a private Gwenithic working repository. No public license or reuse grant is implied. The intended Atelier form is freely copiable and mutable once its release, attribution, dependency, and lineage terms are deliberately chosen.
+The public permission envelope is mapped in `PUBLICATION.md`. `RELEASE-COORDINATE.md` carries the Gwenithic release-coordinate rules used by public bodies. Third-party dependencies retain their own terms and are recorded in `THIRD-PARTY-INVENTORY.json` plus the notices carried by the packaged runtime.
+
+The first social primitive is lineage. A descendant should choose its own artifact identity and preserve the exact parent coordinate rather than pretending to be an official continuation.

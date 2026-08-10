@@ -1,0 +1,64 @@
+name: Return a public trace
+description: Offer an already-public observation, instrument, fork, composition, or uncertain relation to the Atelier.
+title: "[Returned trace] "
+labels:
+  - returned-trace
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue is public. Do not put private bodies, credentials, private conversations, personal data, or uncertain-permission material here. Opening the issue does not transfer ownership or grant Gwenithic rights beyond displaying the words and links that GitHub necessarily publishes as part of the issue.
+  - type: dropdown
+    id: relation
+    attributes:
+      label: Relation
+      description: Choose the nearest word. Uncertainty is allowed.
+      options:
+        - Observation
+        - Instrument
+        - Fork
+        - Composition
+        - Uncertain relation
+    validations:
+      required: true
+  - type: input
+    id: public_link
+    attributes:
+      label: Public body or description
+      description: Link to the already-public body, source, image, recipe, or account of what happened.
+      placeholder: https://…
+    validations:
+      required: true
+  - type: input
+    id: parent
+    attributes:
+      label: Parent coordinate
+      description: The exact Gravity Well release coordinate if known.
+      placeholder: GRC1:gwenithic.atelier.gravity-well@T…:V0.3.1:R0.0
+  - type: input
+    id: attribution
+    attributes:
+      label: Name or chosen attribution
+      description: Say how you want this relation named, including “anonymous” if preferred.
+    validations:
+      required: true
+  - type: textarea
+    id: permission
+    attributes:
+      label: Permission boundary
+      description: State whether Gwenithic may link, display, preserve, redistribute, or adapt the returned body. These are separate permissions. Name a license when one applies.
+      placeholder: Gwenithic may link to it. Ask me again before copying or displaying the underlying file.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: What should travel with it?
+      description: Include limits, changes, uncertainty, or anything another observer should know.
+  - type: checkboxes
+    id: public_acknowledgement
+    attributes:
+      label: Public-surface acknowledgement
+      options:
+        - label: I understand that this GitHub issue and the words I put in it are public.
+          required: true

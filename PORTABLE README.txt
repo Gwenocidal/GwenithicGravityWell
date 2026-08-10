@@ -1,11 +1,11 @@
 GWENITHIC GRAVITY WELL
-Portable build 0.3.1 — Continuous Observatory release candidate
+Portable build 0.3.1 — first public Atelier body
 
 This folder is the application. No installation, account, network connection,
 or separately installed runtime is required.
 
-This candidate is not yet a public release. Read LICENSE-PENDING.md before
-copying or redistributing it.
+This is a public release with several permission surfaces. Read PUBLICATION.md
+before copying or redistributing the mixed application body.
 
 START
   Double-click "Gwenithic Gravity Well.exe".
@@ -91,3 +91,11 @@ PORTABILITY
   observatory to the scene workshop, atlas, and movie maker.
 
 Made by Gwen and Luna inside Gwenithic. :3
+
+PERMISSIONS
+  Gwenithic-authored application source: MIT.
+  Gwenithic-authored documentation and marked exemplars: CC BY 4.0.
+  Schemas and generic fixtures: CC0.
+  Outputs: creator-controlled unless their maker chooses otherwise.
+  Names, marks, dependencies, and third-party runtime bodies retain their
+  separate boundaries. See PUBLICATION.md and THIRD-PARTY-NOTICES.md.

@@ -28,8 +28,14 @@ const carryingFiles = [
   "PORTABLE README.txt",
   "KNOWN-LIMITS.md",
   "RETURN.md",
-  "LICENSE-PENDING.md",
+  "LICENSE-DOCUMENTATION.md",
+  "LICENSE-SCHEMAS.md",
+  "OUTPUTS.md",
+  "PUBLICATION.md",
+  "RELEASE-COORDINATE.md",
+  "TRADEMARKS.md",
   "THIRD-PARTY-NOTICES.md",
+  "THIRD-PARTY-INVENTORY.json",
   "artifact.json",
   "UNIVERSE-TRAJECTORY.md",
   "VALIDATION-v0.3.md",
@@ -39,6 +45,7 @@ const carryingFiles = [
 for (const file of ["main.js", "preload.js", ...carryingFiles, "pnpm-lock.yaml", ".npmrc"]) {
   await fs.copyFile(path.join(root, file), path.join(staging, file));
 }
+await fs.copyFile(path.join(root, "LICENSE"), path.join(staging, "LICENSE-APPLICATION.txt"));
 // The source manifest names development tools that are intentionally absent
 // from the portable runtime. Preserve that exact source definition separately,
 // then give the staged production tree a truthful runtime-only manifest.
@@ -85,6 +92,9 @@ for (const appPath of appPaths) {
   for (const file of carryingFiles) {
     await fs.copyFile(path.join(root, file), path.join(appPath, file));
   }
+  // Electron Packager provides its own `LICENSE` beside the executable.
+  // Keep Gwenithic's MIT grant explicit instead of overwriting that notice.
+  await fs.copyFile(path.join(root, "LICENSE"), path.join(appPath, "LICENSE-APPLICATION.txt"));
   await fs.copyFile(path.join(root, "package.json"), path.join(appPath, "SOURCE-package.json"));
   await fs.copyFile(path.join(root, "pnpm-lock.yaml"), path.join(appPath, "pnpm-lock.yaml"));
   await fs.cp(path.join(root, "examples"), path.join(appPath, "examples"), { recursive: true });

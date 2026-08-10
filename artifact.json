@@ -1,10 +1,10 @@
 {
-  "schema": "gwenithic.artifact/0",
+  "schema": "gwenithic.artifact/1",
   "artifact_id": "gwenithic.atelier.gravity-well",
   "version": "0.3.1",
   "title": "The Gwenithic Gravity Well",
   "kind": "interactive-generative-instrument",
-  "state": "private-release-candidate",
+  "state": "public-release",
   "lineage": {
     "relation": "descends-from",
     "parents": [
@@ -24,7 +24,10 @@
     "record",
     "reproduce",
     "carry",
-    "inspect"
+    "inspect",
+    "copy",
+    "fork",
+    "return"
   ],
   "bodies": [],
   "recipes": [
@@ -40,13 +43,18 @@
     }
   ],
   "licenses": {
-    "status": "pending-approval",
-    "public_grant": false,
-    "boundary": "LICENSE-PENDING.md"
+    "status": "public",
+    "public_grant": true,
+    "application_source": "MIT",
+    "documentation_and_marked_exemplars": "CC-BY-4.0",
+    "schemas_and_generic_fixtures": "CC0-1.0",
+    "outputs": "creator-controlled",
+    "marks": "not-granted",
+    "boundary": "PUBLICATION.md"
   },
   "known_limits": [
     "KNOWN-LIMITS.md"
   ],
-  "privacy": "private-candidate-publication-not-authorized"
+  "release_coordinate_standard": "RELEASE-COORDINATE.md",
+  "privacy": "public-artifact-private-material-excluded"
 }
-

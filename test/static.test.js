@@ -78,28 +78,50 @@ test("packager includes the field manual and writable portable folders", () => {
     "QUICKSTART.txt",
     "KNOWN-LIMITS.md",
     "RETURN.md",
-    "LICENSE-PENDING.md",
+    "LICENSE-DOCUMENTATION.md",
+    "LICENSE-SCHEMAS.md",
+    "OUTPUTS.md",
+    "PUBLICATION.md",
+    "RELEASE-COORDINATE.md",
+    "TRADEMARKS.md",
     "THIRD-PARTY-NOTICES.md",
+    "THIRD-PARTY-INVENTORY.json",
     "artifact.json",
     "VALIDATION-v0.3.1.md",
   ]) {
     assert.ok(fs.existsSync(path.join(root, file)), file);
     assert.match(pack, new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
+  assert.match(pack, /LICENSE-APPLICATION\.txt/);
   assert.match(pack, /examples/);
 });
 
-test("candidate envelope names lineage without manufacturing public permission", () => {
+test("public envelope names lineage and preserves split permissions", () => {
   const packageManifest = JSON.parse(read("package.json"));
   const artifact = JSON.parse(read("artifact.json"));
   const example = JSON.parse(read("examples/home-aperture.gravity.json"));
   assert.equal(packageManifest.version, "0.3.1");
-  assert.equal(artifact.schema, "gwenithic.artifact/0");
+  assert.equal(artifact.schema, "gwenithic.artifact/1");
   assert.equal(artifact.artifact_id, "gwenithic.atelier.gravity-well");
   assert.equal(artifact.version, packageManifest.version);
   assert.equal(artifact.lineage.relation, "descends-from");
   assert.equal(artifact.lineage.parents[0].version, "0.3.0");
-  assert.equal(artifact.licenses.public_grant, false);
+  assert.equal(artifact.state, "public-release");
+  assert.equal(artifact.licenses.public_grant, true);
+  assert.equal(artifact.licenses.application_source, "MIT");
+  assert.equal(artifact.licenses.documentation_and_marked_exemplars, "CC-BY-4.0");
+  assert.equal(artifact.licenses.schemas_and_generic_fixtures, "CC0-1.0");
   assert.equal(example.schema, "gwenithic-gravity-exposure/0.3");
   assert.equal(example.universe.schema, "gwenithic-gravity-universe/0.3");
+});
+
+test("release coordinates keep optional scope and disclosure semantically distinct", () => {
+  const builder = read("scripts/build-release-record.mjs");
+  const standard = read("RELEASE-COORDINATE.md");
+  assert.match(builder, /GRC1:\$\{artifact\.artifact_id\}@\$\{timeCode\}:V/);
+  assert.match(builder, /CROCKFORD/);
+  assert.match(builder, /public_ordinal/);
+  assert.match(builder, /internal_ordinal_disclosed/);
+  assert.match(standard, /`@` is the \*\*scope aperture\*\*/);
+  assert.match(standard, /`.` is the \*\*disclosure aperture\*\*/);
 });

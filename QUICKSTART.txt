@@ -15,6 +15,6 @@ If the live field cannot open, the application will show a plain graphics
 failure page. Try updating the GPU driver and avoid launching through remote or
 virtual display software. The technical detail can be expanded for diagnosis.
 
-This is a private v0.3.1 release candidate. Public copying and redistribution
-terms have not yet been granted. See LICENSE-PENDING.md.
-
+Application source is MIT-licensed. Documentation and marked exemplars use
+CC BY 4.0. Schemas and generic fixtures use CC0. Outputs remain controlled by
+their makers. Read PUBLICATION.md for the complete boundary.

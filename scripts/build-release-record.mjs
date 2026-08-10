@@ -19,13 +19,32 @@ const appDirectory = path.resolve(
 );
 const archivePath = path.resolve(
   root,
-  argumentsByName.get("--archive") ?? path.join("release", "Gwenithic Gravity Well Portable v0.3.1-rc.1.zip"),
+  argumentsByName.get("--archive") ?? path.join("release", "Gwenithic Gravity Well Portable v0.3.1.zip"),
 );
 const outputPath = path.resolve(
   root,
-  argumentsByName.get("--output") ?? path.join("test-artifacts", "release-candidate-v0.3.1.json"),
+  argumentsByName.get("--output") ?? path.join("test-artifacts", "release-v0.3.1.json"),
 );
 const requireClean = process.argv.includes("--require-clean");
+const publicOrdinal = Number.parseInt(argumentsByName.get("--public-ordinal") ?? "0", 10);
+const internalOrdinal = Number.parseInt(argumentsByName.get("--internal-ordinal") ?? "0", 10);
+const discloseInternal = argumentsByName.get("--disclose-internal") !== "false";
+const releasedAt = new Date(argumentsByName.get("--released-at") ?? Date.now());
+
+if (!Number.isSafeInteger(publicOrdinal) || publicOrdinal < 0) throw new Error("Public ordinal must be a non-negative integer.");
+if (!Number.isSafeInteger(internalOrdinal) || internalOrdinal < 0) throw new Error("Internal ordinal must be a non-negative integer.");
+if (Number.isNaN(releasedAt.valueOf())) throw new Error("Release time must be a valid UTC instant.");
+
+const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+function compactUtc(timestamp) {
+  let value = BigInt(timestamp.valueOf());
+  let encoded = "";
+  do {
+    encoded = CROCKFORD[Number(value % 32n)] + encoded;
+    value /= 32n;
+  } while (value > 0n);
+  return `T${encoded.padStart(10, "0")}`;
+}
 
 const requiredFiles = [
   "Gwenithic Gravity Well.exe",
@@ -34,8 +53,15 @@ const requiredFiles = [
   "PORTABLE README.txt",
   "KNOWN-LIMITS.md",
   "RETURN.md",
-  "LICENSE-PENDING.md",
+  "LICENSE-APPLICATION.txt",
+  "LICENSE-DOCUMENTATION.md",
+  "LICENSE-SCHEMAS.md",
+  "OUTPUTS.md",
+  "PUBLICATION.md",
+  "RELEASE-COORDINATE.md",
+  "TRADEMARKS.md",
   "THIRD-PARTY-NOTICES.md",
+  "THIRD-PARTY-INVENTORY.json",
   "artifact.json",
   "VALIDATION-v0.3.1.md",
   "SOURCE-package.json",
@@ -99,9 +125,19 @@ if (requireClean && sourceStatus) {
 const archiveStat = await fs.stat(archivePath);
 const tree = await measureTree(appDirectory);
 const digest = await sha256(archivePath);
+const timeCode = compactUtc(releasedAt);
+const sequence = discloseInternal ? `${publicOrdinal}.${internalOrdinal}` : `${publicOrdinal}`;
+const releaseCoordinate = `GRC1:${artifact.artifact_id}@${timeCode}:V${artifact.version}:R${sequence}`;
 const record = {
-  schema: "gwenithic.artifact-release-candidate/0",
-  created_at: new Date().toISOString(),
+  schema: "gwenithic.artifact-release/1",
+  released_at_utc: releasedAt.toISOString(),
+  compact_utc: timeCode,
+  release_coordinate: releaseCoordinate,
+  sequence: {
+    public_ordinal: publicOrdinal,
+    internal_ordinal: internalOrdinal,
+    internal_ordinal_disclosed: discloseInternal,
+  },
   artifact: {
     artifact_id: artifact.artifact_id,
     version: artifact.version,
@@ -128,4 +164,4 @@ const record = {
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
 await fs.writeFile(`${archivePath}.sha256`, `${digest}  ${path.basename(archivePath)}\n`, "utf8");
-console.log(JSON.stringify({ outputPath, archivePath, sha256: digest, sourceClean: record.source.clean }));
+console.log(JSON.stringify({ outputPath, archivePath, releaseCoordinate, sha256: digest, sourceClean: record.source.clean }));

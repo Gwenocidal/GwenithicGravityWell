@@ -188,7 +188,7 @@ async function createMainWindow(mode = appSettings.windowMode) {
 
   mainWindow.setMenuBarVisibility(false);
   if (smokeMode) {
-    mainWindow.webContents.on("console-message", (_event, details) => {
+    mainWindow.webContents.on("console-message", (details) => {
       console.error(`[renderer:${details.level}] ${details.message}`);
     });
   }

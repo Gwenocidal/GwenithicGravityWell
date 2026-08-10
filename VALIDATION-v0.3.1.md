@@ -25,7 +25,7 @@ v0.3.1 descends from the preserved v0.3.0 Continuous Observatory. The continuous
 - Packaged forced renderer failure produced the expected readable failure surface.
 - A 2560 by 1440 tiled PNG capture and exposure sidecar completed.
 - An eight-sample 640 by 360 calligraphy exposure and sidecar completed.
-- An ordinary 640 by 360 capture was loaded through the supported exposure schema and independently rerendered. Geometry matched. The two GPU/PNG passes were not byte-identical, but raw 8-bit channels converged with mean absolute difference `0.00535`, maximum difference `8`, and 3,856 differing channels among 921,600. The smoke gate permits mean difference at most `0.05` and maximum difference at most `16`.
+- An ordinary 640 by 360 capture was loaded through the supported exposure schema and independently rerendered. Geometry matched. Repeated candidate runs were not byte-identical, but raw 8-bit channels converged with mean absolute difference from `0.00535` through `0.00564`, maximum difference `8`, and 3,856 through 4,025 differing channels among 921,600. The smoke gate permits mean difference at most `0.05` and maximum difference at most `16`.
 - Static inspection found no application `fetch`, WebSocket, EventSource, XMLHttpRequest, HTTP endpoint, Electron network request, or web-request hook. The only URL-shaped runtime source string was the XML namespace in the locally generated cursor SVG. This is static evidence of offline design, not a packet-level network trace.
 - Candidate ZIP hash, byte length, and clean source binding are recorded outside the archive by the release-candidate manifest so the archive does not attempt to contain its own hash.
 

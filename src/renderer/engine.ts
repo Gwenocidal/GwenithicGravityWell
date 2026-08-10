@@ -78,6 +78,38 @@ const FRAGMENT_SHADER = `
     return exp(-value * value);
   }
 
+  float valueNoise(vec2 point, float seed) {
+    vec2 base = floor(point);
+    vec2 blend = fract(point);
+    blend = blend * blend * (3.0 - 2.0 * blend);
+    float a = hash21(base + seed);
+    float b = hash21(base + vec2(1.0, 0.0) + seed);
+    float c = hash21(base + vec2(0.0, 1.0) + seed);
+    float d = hash21(base + vec2(1.0, 1.0) + seed);
+    return mix(mix(a, b, blend.x), mix(c, d, blend.x), blend.y);
+  }
+
+  // x: inhabited cloud, y: filament, z: explicit void. This is a continuous
+  // population law, not a texture, so its structure survives zoom and tiling.
+  vec3 matterField(vec2 world, float seed, float scale) {
+    vec2 p = rotate2d(0.17 + seed * 0.013) * (world - vec2(0.5)) * scale;
+    float low = valueNoise(p * 0.48 + vec2(7.1, -3.7), seed + 11.0);
+    float cross = valueNoise(p * 0.39 + vec2(-5.4, 12.8), seed + 29.0);
+    vec2 warped = p + vec2(low - 0.5, cross - 0.5) * 1.55;
+    float middle = valueNoise(warped * 1.07 + vec2(19.3, 2.6), seed + 47.0);
+    float fine = valueNoise(warped * 2.41 + vec2(-8.7, 21.4), seed + 83.0);
+    float sweep = 0.5 + 0.5 * sin(
+      warped.y * 1.72 + sin(warped.x * 1.11 + seed * 0.07) * 1.85
+    );
+    float ridge_signal = fine * 0.56 + sweep * 0.44;
+    float filament = pow(clamp(1.0 - abs(ridge_signal * 2.0 - 1.0), 0.0, 1.0), 3.4);
+    float continent = low * 0.58 + middle * 0.42;
+    float inhabited = smoothstep(0.41, 0.69, continent + filament * 0.15);
+    float void_gate = smoothstep(0.34, 0.57, continent);
+    float cloud = inhabited * void_gate * (0.24 + 0.76 * smoothstep(0.24, 0.84, middle));
+    return vec3(cloud, filament * void_gate, 1.0 - void_gate);
+  }
+
   vec2 worldFromScreen(vec2 screen_uv, float depth) {
     float zoom = max(u_observer.z, 0.000001);
     vec2 world = u_observer.xy + (screen_uv - vec2(0.5)) * vec2(u_aspect, 1.0) / zoom;
@@ -133,73 +165,144 @@ const FRAGMENT_SHADER = `
   ) {
     vec2 base = floor(world / cell_size);
     float existence = hash21(base + seed);
-    if (existence >= density) return vec4(0.0);
+    if (existence >= clamp(density, 0.002, 0.96)) return vec4(0.0);
     // Stars stay inside a generous cell margin, so one deterministic cell lookup
     // is sufficient and live evaluation does not multiply into a 3x3 search.
     vec2 jitter = hash22(base + seed * 1.73);
-    vec2 position = (base + vec2(0.16) + jitter * 0.68) * cell_size;
-    float distance_to_star = length(world - position);
+    vec2 position = (base + vec2(0.24) + jitter * 0.52) * cell_size;
+    vec2 delta = world - position;
+    float distance_to_star = length(delta);
     float size_noise = hash21(base + seed * 4.17);
-    float physical_radius = cell_size * radius_ratio * mix(0.55, 1.8, size_noise * size_noise);
-    float radius = sqrt(physical_radius * physical_radius + pixel_world * pixel_world * 0.32);
-    float energy_scale = clamp((physical_radius * physical_radius) / max(radius * radius, 0.00000000001), 0.02, 1.0);
+    float rare = pow(size_noise, 7.0);
+    float physical_radius = cell_size * radius_ratio * mix(0.42, 1.58, size_noise * size_noise);
+    float radius = sqrt(physical_radius * physical_radius + pixel_world * pixel_world * 0.44);
+    float energy_scale = clamp((physical_radius * physical_radius) / max(radius * radius, 0.00000000001), 0.0005, 1.0);
     float core = gaussian(distance_to_star / max(radius, 0.00000001)) * energy_scale;
-    float bloom_radius = sqrt(physical_radius * physical_radius * 10.24 + pixel_world * pixel_world * 0.48);
-    float bloom_energy = clamp((physical_radius * physical_radius * 10.24) / max(bloom_radius * bloom_radius, 0.00000000001), 0.02, 1.0);
-    float bloom = gaussian(distance_to_star / max(bloom_radius, 0.00000001)) * bloom_energy;
+    float aureole_radius = sqrt(physical_radius * physical_radius * 13.4 + pixel_world * pixel_world * 0.62);
+    float aureole_energy = clamp((physical_radius * physical_radius * 13.4) / max(aureole_radius * aureole_radius, 0.00000000001), 0.0005, 1.0);
+    float aureole = gaussian(distance_to_star / max(aureole_radius, 0.00000001)) * aureole_energy;
     float temperature = hash21(base + seed * 9.31);
     float twinkle = 0.94 + 0.06 * sin(mod(u_time, 4096.0) * (0.7 + size_noise) + existence * 71.0);
-    float local_gain = gain * mix(0.32, 1.45, size_noise) * twinkle;
-    vec3 light = stellarColor(temperature) * (core * local_gain + bloom * local_gain * 0.11);
-    return vec4(light, clamp(core * local_gain + bloom * 0.22, 0.0, 1.0));
+    float local_gain = gain * mix(0.30, 1.62, size_noise) * twinkle;
+    vec3 temperature_color = stellarColor(temperature);
+    vec3 hot_core = mix(temperature_color, vec3(1.48, 1.31, 1.14), 0.52 + rare * 0.36);
+
+    float orientation = hash21(base + seed * 12.73) * PI;
+    vec2 local = rotate2d(orientation) * delta;
+    float spike_width = max(pixel_world * 0.68, physical_radius * 0.22);
+    float spike_extent = max(physical_radius * mix(3.6, 7.8, rare), pixel_world * 1.8);
+    float spike_a = gaussian(local.x / spike_width) * exp(-abs(local.y) / spike_extent);
+    float spike_b = gaussian(local.y / spike_width) * exp(-abs(local.x) / spike_extent);
+    float spikes = (spike_a + spike_b) * rare * energy_scale;
+
+    // The core carries HDR radiance. Tone mapping, not a painted disc, makes it white-hot.
+    vec3 light = hot_core * core * local_gain * (1.15 + rare * 5.2);
+    light += temperature_color * aureole * local_gain * (0.10 + rare * 0.23);
+    light += hot_core * spikes * local_gain * 0.72;
+    float coverage = clamp(core * local_gain * (1.0 + rare * 2.4) + aureole * 0.30 + spikes * 0.46, 0.0, 1.0);
+    return vec4(light, coverage);
   }
 
-  float ellipseLine(vec2 point, vec2 center, vec2 axes, float rotation, float width) {
+  float ellipseDistance(vec2 point, vec2 center, vec2 axes, float rotation) {
     vec2 q = rotate2d(-rotation) * (point - center);
     float normalized = length(q / axes);
-    float distance_to_curve = abs(normalized - 1.0) * min(axes.x, axes.y);
-    return 1.0 - smoothstep(width * 0.45, width * 1.55, distance_to_curve);
+    return abs(normalized - 1.0) * min(axes.x, axes.y);
   }
 
-  float orbitArc(
+  vec4 orbitEmitter(
     vec2 point,
     vec2 center,
     vec2 axes,
     float rotation,
     float width,
+    vec3 color,
+    float energy,
+    float phase
+  ) {
+    vec2 q = rotate2d(-rotation) * (point - center);
+    float angle = atan(q.y / axes.y, q.x / axes.x);
+    float distance_to_curve = ellipseDistance(point, center, axes, rotation);
+    float pixel_world = max(u_inv_min_dimension / max(u_observer.z, 0.000001), 0.0000000002);
+    float hot_width = sqrt(width * width + pixel_world * pixel_world * 0.42);
+    float halo_source_width = width * 4.6;
+    float halo_width = sqrt(halo_source_width * halo_source_width + pixel_world * pixel_world * 0.42);
+    float atmosphere_source_width = width * 12.0;
+    float atmosphere_width = sqrt(atmosphere_source_width * atmosphere_source_width + pixel_world * pixel_world * 0.42);
+    float hot = gaussian(distance_to_curve / hot_width) * width / hot_width;
+    float halo = gaussian(distance_to_curve / halo_width) * halo_source_width / halo_width;
+    float atmosphere = gaussian(distance_to_curve / atmosphere_width) * atmosphere_source_width / atmosphere_width;
+    float current = 0.70 + 0.18 * sin(angle * 7.0 + phase) + 0.12 * sin(angle * 17.0 - phase * 1.7);
+    float knot = pow(max(0.0, 0.5 + 0.5 * cos(angle * 3.0 + phase * 0.63)), 16.0);
+    float local_energy = energy * clamp(current + knot * 1.65, 0.14, 2.4);
+    vec3 white_hot = mix(color, vec3(1.42, 1.28, 1.15), 0.58);
+    vec3 light = white_hot * hot * local_energy;
+    light += color * (halo * 0.115 + atmosphere * 0.022) * local_energy;
+    float coverage = clamp(hot * local_energy + halo * 0.26 + atmosphere * 0.06, 0.0, 1.0);
+    return vec4(light, coverage);
+  }
+
+  vec4 orbitArcEmitter(
+    vec2 point,
+    vec2 center,
+    vec2 axes,
+    float rotation,
+    float width,
+    vec3 color,
+    float energy,
+    float phase,
     float arc_center,
     float arc_width
   ) {
     vec2 q = rotate2d(-rotation) * (point - center);
     float angle = atan(q.y / axes.y, q.x / axes.x);
     float angular_distance = abs(atan(sin(angle - arc_center), cos(angle - arc_center)));
-    return ellipseLine(point, center, axes, rotation, width) *
-      (1.0 - smoothstep(arc_width * 0.65, arc_width, angular_distance));
+    float gate = 1.0 - smoothstep(arc_width * 0.66, arc_width, angular_distance);
+    return orbitEmitter(point, center, axes, rotation, width, color, energy, phase) * gate;
+  }
+
+  vec4 addLight(vec4 a, vec4 b) {
+    return vec4(a.rgb + b.rgb, max(a.a, b.a));
   }
 
   vec4 farLayer(vec2 world, float pixel_world) {
     vec2 from_center = world - vec2(0.5);
     float radius = length(from_center);
     float field = 1.0 - smoothstep(0.54, 0.94, radius);
-    float violet = exp(-dot(from_center, from_center) * 5.4);
-    float ember = exp(-dot(from_center - vec2(-0.10, 0.025), from_center - vec2(-0.10, 0.025)) * 25.0);
-    vec3 haze = (vec3(0.17, 0.085, 0.36) * violet * 0.52 + vec3(0.36, 0.16, 0.055) * ember * 0.24) * field;
-    vec4 stars = starGrid(world, 0.048, 17.0, 0.62, 0.018, 0.42, pixel_world);
-    float orbit = ellipseLine(world, vec2(0.5), vec2(0.75, 0.66), -0.24, max(pixel_world * 1.15, 0.00034));
-    float arc = orbitArc(world, vec2(0.5), vec2(0.75, 0.66), -0.24, max(pixel_world * 1.35, 0.00038), 0.72, 0.15);
-    vec3 structure = vec3(0.52, 0.40, 0.92) * orbit * 0.12 + vec3(0.72, 0.86, 1.42) * arc * 0.44;
-    return vec4(haze + stars.rgb + structure, max(field * 0.24, max(stars.a, orbit * 0.16)));
+    vec3 matter = matterField(world, 13.0, 2.35);
+    float violet = exp(-dot(from_center, from_center) * 4.8);
+    vec3 haze = vec3(0.13, 0.047, 0.30) * pow(matter.x, 1.36) * violet * 0.68;
+    haze += vec3(0.34, 0.12, 0.045) * pow(matter.y, 2.0) * field * 0.25;
+    vec4 stars = starGrid(world, 0.047, 17.0, 0.16 + matter.x * 0.79, 0.016, 0.49, pixel_world);
+    vec4 dust = starGrid(world, 0.020, 31.0, 0.065 + matter.y * 0.36, 0.011, 0.15, pixel_world);
+    vec4 structure = orbitEmitter(world, vec2(0.5), vec2(0.76, 0.67), -0.24,
+      0.00018, vec3(0.50, 0.39, 0.92), 0.15, 1.7);
+    structure = addLight(structure, orbitEmitter(world, vec2(0.49, 0.51), vec2(0.68, 0.605), 0.19,
+      0.00015, vec3(0.98, 0.54, 0.26), 0.08, 4.2));
+    structure = addLight(structure, orbitArcEmitter(world, vec2(0.5), vec2(0.76, 0.67), -0.24,
+      0.00022, vec3(0.62, 0.86, 1.42), 0.52, 2.6, 0.72, 0.16));
+    vec3 light = (haze + stars.rgb + dust.rgb + structure.rgb) * field;
+    float alpha = max(max(stars.a, dust.a), max(structure.a, (matter.x * 0.42 + matter.y * 0.22) * field));
+    return vec4(light, alpha);
   }
 
   vec4 midLayer(vec2 world, float pixel_world) {
-    vec4 stars = starGrid(world, 0.069, 43.0, 0.68, 0.020, 0.64, pixel_world);
-    float outer = ellipseLine(world, vec2(0.5), vec2(0.59, 0.55), 0.33, max(pixel_world * 1.2, 0.00032));
-    float inner = ellipseLine(world, vec2(0.5), vec2(0.40), 0.0, max(pixel_world * 1.3, 0.00034));
-    float blue_arc = orbitArc(world, vec2(0.5), vec2(0.59, 0.55), 0.33, max(pixel_world * 1.6, 0.00042), 2.30, 0.095);
-    float white_arc = orbitArc(world, vec2(0.5), vec2(0.40), 0.0, max(pixel_world * 1.8, 0.00044), -1.28, 0.11);
-    vec3 structure = vec3(1.20, 0.70, 0.29) * outer * 0.17 + vec3(1.05, 0.88, 0.64) * inner * 0.34;
-    structure += vec3(0.40, 0.88, 1.55) * blue_arc * 0.62 + vec3(1.50, 1.22, 0.90) * white_arc * 0.88;
-    return vec4(stars.rgb + structure, max(stars.a, max(outer * 0.23, inner * 0.43)));
+    vec3 matter = matterField(world, 41.0, 3.15);
+    vec3 cloud_light = vec3(0.07, 0.055, 0.19) * pow(matter.x, 1.55) * 0.52;
+    cloud_light += vec3(0.22, 0.075, 0.034) * pow(matter.y, 2.1) * 0.24;
+    vec4 stars = starGrid(world, 0.067, 43.0, 0.14 + matter.x * 0.81, 0.018, 0.76, pixel_world);
+    vec4 dust = starGrid(world, 0.027, 61.0, 0.055 + matter.y * 0.42, 0.010, 0.19, pixel_world);
+    vec4 structure = orbitEmitter(world, vec2(0.5), vec2(0.59, 0.55), 0.33,
+      0.00017, vec3(1.20, 0.62, 0.24), 0.21, 0.8);
+    structure = addLight(structure, orbitEmitter(world, vec2(0.5), vec2(0.49, 0.455), -0.12,
+      0.00015, vec3(0.49, 0.74, 1.38), 0.16, 3.4));
+    structure = addLight(structure, orbitEmitter(world, vec2(0.5), vec2(0.40), 0.0,
+      0.00018, vec3(1.05, 0.88, 0.64), 0.34, 5.1));
+    structure = addLight(structure, orbitArcEmitter(world, vec2(0.5), vec2(0.59, 0.55), 0.33,
+      0.00022, vec3(0.40, 0.88, 1.55), 0.72, 2.3, 2.30, 0.10));
+    structure = addLight(structure, orbitArcEmitter(world, vec2(0.5), vec2(0.40), 0.0,
+      0.00023, vec3(1.50, 1.22, 0.90), 0.92, 4.9, -1.28, 0.12));
+    return vec4(cloud_light + stars.rgb + dust.rgb + structure.rgb,
+      max(max(stars.a, dust.a), max(structure.a, matter.x * 0.30 + matter.y * 0.16)));
   }
 
   vec4 microHierarchy(vec2 world, float pixel_world) {
@@ -208,18 +311,26 @@ const FRAGMENT_SHADER = `
     float cell = 0.018 * exp2(-lod);
     // The next octave fades in, then becomes the stable current octave at the
     // power-of-two boundary. Its seed is identical on both sides of that handoff.
-    vec4 current = starGrid(world, cell, 131.0 + lod * 23.0, 0.18, 0.012, 0.22, pixel_world);
-    vec4 next = starGrid(world, cell * 0.5, 131.0 + (lod + 1.0) * 23.0, 0.14, 0.011, 0.22 * smoothstep(0.28, 0.96, phase), pixel_world);
+    vec3 matter = matterField(world, 127.0 + lod * 5.0, 5.2 * exp2(min(lod, 8.0) * 0.12));
+    vec4 current = starGrid(world, cell, 131.0 + lod * 23.0, 0.045 + matter.x * 0.33, 0.011, 0.27, pixel_world);
+    vec4 next = starGrid(world, cell * 0.5, 131.0 + (lod + 1.0) * 23.0,
+      0.035 + matter.y * 0.25, 0.010, 0.27 * smoothstep(0.28, 0.96, phase), pixel_world);
     return vec4(current.rgb + next.rgb, max(current.a, next.a));
   }
 
   vec4 nearLayer(vec2 world, float pixel_world) {
     vec2 from_center = world - vec2(0.5);
     float radius = length(from_center);
-    vec4 stars = starGrid(world, 0.108, 79.0, 0.72, 0.020, 0.88, pixel_world);
+    vec3 matter = matterField(world, 73.0, 4.15);
+    vec4 stars = starGrid(world, 0.106, 79.0, 0.12 + matter.x * 0.83, 0.018, 1.02, pixel_world);
+    vec4 companions = starGrid(world, 0.038, 97.0, 0.045 + matter.y * 0.44, 0.010, 0.24, pixel_world);
     vec4 micro = microHierarchy(world, pixel_world);
-    float orbit = ellipseLine(world, vec2(0.5), vec2(0.30, 0.295), 0.18, max(pixel_world * 1.05, 0.00025));
-    float orbit_hot = orbitArc(world, vec2(0.5), vec2(0.30, 0.295), 0.18, max(pixel_world * 1.35, 0.00030), -0.55, 0.12);
+    vec4 structure = orbitEmitter(world, vec2(0.5), vec2(0.30, 0.295), 0.18,
+      0.00014, vec3(0.60, 0.43, 1.05), 0.22, 2.1);
+    structure = addLight(structure, orbitEmitter(world, vec2(0.5), vec2(0.235, 0.218), -0.36,
+      0.00012, vec3(0.45, 0.78, 1.35), 0.12, 5.7));
+    structure = addLight(structure, orbitArcEmitter(world, vec2(0.5), vec2(0.30, 0.295), 0.18,
+      0.00018, vec3(1.34, 0.74, 0.33), 0.62, 3.2, -0.55, 0.13));
 
     float core = exp(-radius * radius * 620.0);
     float core_hot = exp(-radius * radius * 3600.0);
@@ -234,9 +345,12 @@ const FRAGMENT_SHADER = `
     trajectory_a *= smoothstep(0.47, 0.05, abs(dot(from_center, line_a)));
     trajectory_b *= smoothstep(0.42, 0.04, abs(dot(from_center, line_b)));
     vec3 lines = vec3(0.35, 0.60, 1.20) * trajectory_a * 0.25 + vec3(1.22, 0.55, 0.23) * trajectory_b * 0.22;
-    vec3 structure = vec3(0.60, 0.43, 1.05) * orbit * 0.10 + vec3(1.34, 0.74, 0.33) * orbit_hot * 0.48;
-    return vec4(stars.rgb + micro.rgb + structure + core_light + lines,
-      max(max(stars.a, micro.a), max(max(orbit * 0.16, core * 0.76), max(trajectory_a, trajectory_b) * 0.18)));
+    vec3 local_cloud = vec3(0.055, 0.032, 0.16) * pow(matter.x, 1.65) * 0.36;
+    local_cloud += vec3(0.20, 0.07, 0.025) * pow(matter.y, 2.2) * 0.18;
+    return vec4(stars.rgb + companions.rgb + micro.rgb + structure.rgb + core_light + lines + local_cloud,
+      max(max(max(stars.a, companions.a), micro.a),
+        max(max(max(structure.a, core * 0.76), max(trajectory_a, trajectory_b) * 0.18),
+          matter.x * 0.22 + matter.y * 0.14)));
   }
 
   vec4 sceneAt(float spectral_index, float influence, float radius) {
@@ -325,7 +439,9 @@ const FRAGMENT_SHADER = `
     alpha = max(alpha, max(horizon, inner_shadow * 0.84));
 
     vec3 display_color = pow(applyToneMap(max(radiance, vec3(0.0))), vec3(1.0 / 2.2));
-    gl_FragColor = vec4(display_color * alpha, alpha);
+    // This instrument observes an opaque black universe. Coverage still informs
+    // gravitationally borrowed light above, but it must not dim unrelated radiance.
+    gl_FragColor = vec4(display_color, 1.0);
   }
 `;
 

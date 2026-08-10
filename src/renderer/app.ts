@@ -5,6 +5,7 @@ import {
   makeExposureRecipe,
   normalizePath,
   normalizeUniverseState,
+  RENDERER_VERSION,
   samplePath,
   UniverseJournal,
   zoomObserverAt,
@@ -1130,6 +1131,9 @@ async function initialize() {
       if (candidate.schema !== "gwenithic-gravity-exposure/0.3" || candidate.universe?.schema !== "gwenithic-gravity-universe/0.3") {
         throw new Error("The selected recipe does not contain a supported universe state.");
       }
+      const sourceRenderer = String((candidate as { renderer?: unknown }).renderer ?? "unknown renderer");
+      const sourceUniverseRenderer = String((candidate.universe as { renderer?: unknown }).renderer ?? "unknown renderer");
+      const exactRenderer = sourceRenderer === RENDERER_VERSION && sourceUniverseRenderer === RENDERER_VERSION;
       loadedRecipe = {
         ...candidate,
         universe: normalizeUniverseState(candidate.universe),
@@ -1139,8 +1143,10 @@ async function initialize() {
       syncUniverseControls();
       syncTimelineControls();
       live.applyUniverseState();
-      renderRecipeButton.disabled = false;
-      journalStatus.textContent = `Loaded exposure: ${result.path}`;
+      renderRecipeButton.disabled = !exactRenderer;
+      journalStatus.textContent = exactRenderer
+        ? `Loaded exposure: ${result.path}`
+        : `Loaded observer state from ${sourceRenderer}. Exact replay is disabled because this body uses ${RENDERER_VERSION}; make a new capture to record the new interpretation.`;
     } catch (error) {
       loadedRecipe = null;
       renderRecipeButton.disabled = true;

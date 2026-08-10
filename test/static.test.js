@@ -26,6 +26,7 @@ test("portable shell exposes the required controls and safety ceilings", () => {
 test("capture renderer uses global tile coordinates and a continuous procedural reality", () => {
   const engine = read("src/renderer/engine.ts");
   const worker = read("src/renderer/export-worker.ts");
+  const comparison = read("scripts/compare-observations.mjs");
 
   assert.match(engine, /u_view_origin/);
   assert.match(engine, /u_view_scale/);
@@ -33,6 +34,9 @@ test("capture renderer uses global tile coordinates and a continuous procedural 
   assert.match(engine, /worldFromScreen/);
   assert.match(engine, /starGrid/);
   assert.match(engine, /microHierarchy/);
+  assert.match(engine, /matterField/);
+  assert.match(engine, /orbitEmitter/);
+  assert.match(engine, /The core carries HDR radiance/);
   assert.match(engine, /red_scene\.r, green_scene\.g, blue_scene\.b/);
   assert.doesNotMatch(engine, /texImage2D/);
   assert.match(worker, /OffscreenCanvas/);
@@ -40,14 +44,18 @@ test("capture renderer uses global tile coordinates and a continuous procedural 
   assert.match(worker, /tile-ack/);
   assert.match(worker, /temporalCount/);
   assert.match(worker, /globalCompositeOperation = "lighter"/);
+  assert.match(comparison, /sharp\.kernel\.lanczos3/);
+  assert.match(comparison, /meanAbsoluteError/);
 });
 
 test("observations are journaled, reproducible, and distinct from semantic authority", () => {
   const universe = read("src/renderer/universe.ts");
+  const app = read("src/renderer/app.ts");
   const main = read("main.js");
   const trajectory = read("UNIVERSE-TRAJECTORY.md");
 
   assert.match(universe, /gwenithic-gravity-universe\/0\.3/);
+  assert.match(universe, /continuous-observatory-light-field-0\.3\.2/);
   assert.match(universe, /class UniverseJournal/);
   assert.match(universe, /requestId/);
   assert.match(universe, /makeExposureRecipe/);
@@ -56,6 +64,7 @@ test("observations are journaled, reproducible, and distinct from semantic autho
   assert.match(main, /recipeReplayTest/);
   assert.match(main, /meanAbsoluteDifference <= 0\.05/);
   assert.match(main, /maximumDifference <= 16/);
+  assert.match(app, /Exact replay is disabled because this body uses/);
   assert.match(trajectory, /The ideal is not absent\. It is inexhaustible\./);
   assert.match(trajectory, /It does \*\*not\*\* claim to be λ/);
 });
@@ -65,6 +74,7 @@ test("packager includes the field manual and writable portable folders", () => {
   assert.ok(fs.existsSync(path.join(root, "PORTABLE README.txt")));
   assert.match(pack, /PORTABLE README\.txt/);
   assert.match(pack, /UNIVERSE-TRAJECTORY\.md/);
+  assert.match(pack, /MULTISCALE-LIGHT-FIELD-FLIGHT\.md/);
   assert.match(pack, /VALIDATION-v0\.3\.md/);
   assert.match(pack, /pnpm-lock\.yaml/);
   assert.match(pack, /--frozen-lockfile/);

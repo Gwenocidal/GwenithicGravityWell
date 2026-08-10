@@ -38,6 +38,7 @@ const carryingFiles = [
   "THIRD-PARTY-INVENTORY.json",
   "artifact.json",
   "UNIVERSE-TRAJECTORY.md",
+  "MULTISCALE-LIGHT-FIELD-FLIGHT.md",
   "VALIDATION-v0.3.md",
   "VALIDATION-v0.3.1.md",
 ];

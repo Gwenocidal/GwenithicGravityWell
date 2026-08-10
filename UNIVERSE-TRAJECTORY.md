@@ -38,6 +38,8 @@ Pan and exponential zoom through the live universe. Show world position, magnifi
 
 Replace fixed raster star planes with deterministic analytic and procedural evaluators: hierarchical star populations, analytic orbit curves, haze, trajectories, core radiance, and lensing. Details are stable under tiling and independent of output resolution. Future evaluators may include particle catalogs, imported datasets, and λ-resident semantic objects without changing projection law.
 
+**Current development flight:** `continuous-observatory-light-field-0.3.2` adds a deterministic cloud/filament/void population law, clustered HDR stellar emitters, and energy-aware orbit emitters. The implementation and convergence evidence are recorded in `MULTISCALE-LIGHT-FIELD-FLIGHT.md`. The next boundary is a versioned `MatterState` that moves these Genesis laws from shader constants into the alterable core bundle.
+
 ### 3. Reproducible exposures
 
 Every capture receives a recipe containing scene version and seed, observer state, well state, time, radiance controls, path/timeline reference, output geometry, renderer version, and approximation notes. Recipes can be reloaded and replayed. A beautiful accident becomes an addressable observation rather than a lost gesture.

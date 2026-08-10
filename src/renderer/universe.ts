@@ -1,7 +1,7 @@
 import type { Vec2 } from "./engine";
 
 export const UNIVERSE_SCHEMA = "gwenithic-gravity-universe/0.3" as const;
-export const RENDERER_VERSION = "continuous-observatory-0.3" as const;
+export const RENDERER_VERSION = "continuous-observatory-light-field-0.3.2" as const;
 
 export type ToneMap = "aces" | "reinhard" | "linear";
 

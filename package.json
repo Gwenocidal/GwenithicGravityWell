@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test test/static.test.js",
     "test:ui": "pnpm run build && node --test test/ui-smoke.test.js",
+    "compare:observations": "node scripts/compare-observations.mjs",
     "inventory": "node scripts/build-dependency-inventory.mjs",
     "pack": "pnpm run inventory && pnpm run build && node scripts/package.mjs"
   },

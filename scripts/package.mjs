@@ -5,8 +5,20 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const output = path.join(root, "release");
+const developmentLabel = String(process.env.GW_DEVELOPMENT_BUILD ?? "").trim();
+const safeDevelopmentLabel = developmentLabel.replace(/[^0-9A-Za-z._-]+/g, "-");
+const developmentBuild = safeDevelopmentLabel.length > 0;
+const output = developmentBuild
+  ? path.join(root, "release", "development")
+  : path.join(root, "release");
 const staging = path.join(root, ".packaging-stage");
+const packagedName = developmentBuild
+  ? `Gwenithic Gravity Well DEV ${safeDevelopmentLabel}`
+  : "Gwenithic Gravity Well";
+const sourceCommit = String(process.env.GW_SOURCE_COMMIT ?? "").trim();
+const commitBuildComponent = /^[0-9a-f]{4}/i.test(sourceCommit)
+  ? Number.parseInt(sourceCommit.slice(0, 4), 16)
+  : 1;
 
 async function run(command, args, cwd) {
   await new Promise((resolve, reject) => {
@@ -53,6 +65,25 @@ await fs.copyFile(path.join(root, "LICENSE"), path.join(staging, "LICENSE-APPLIC
 // then give the staged production tree a truthful runtime-only manifest.
 const sourceManifestText = await fs.readFile(path.join(root, "package.json"), "utf8");
 const runtimeManifest = JSON.parse(sourceManifestText);
+let developmentArtifactText = null;
+let developmentArtifactVersion = null;
+if (developmentBuild) {
+  const sourceVersion = String(runtimeManifest.version ?? "0.0.0").split("-")[0];
+  const prerelease = safeDevelopmentLabel.toLowerCase().replace(/[^0-9a-z.-]+/g, "-");
+  developmentArtifactVersion = `${sourceVersion}-dev.${prerelease}`;
+  runtimeManifest.productName = packagedName;
+  const artifact = JSON.parse(await fs.readFile(path.join(root, "artifact.json"), "utf8"));
+  artifact.version = developmentArtifactVersion;
+  artifact.state = "development-build";
+  artifact.development = {
+    label: safeDevelopmentLabel,
+    source_branch: process.env.GW_SOURCE_BRANCH ?? null,
+    source_commit: process.env.GW_SOURCE_COMMIT ?? null,
+    replaces_stable_release: false,
+  };
+  developmentArtifactText = `${JSON.stringify(artifact, null, 2)}\n`;
+  await fs.writeFile(path.join(staging, "artifact.json"), developmentArtifactText, "utf8");
+}
 delete runtimeManifest.devDependencies;
 delete runtimeManifest.scripts;
 await fs.writeFile(path.join(staging, "package.json"), sourceManifestText, "utf8");
@@ -77,11 +108,22 @@ try {
   appPaths = await packager({
     dir: staging,
     out: output,
-    name: "Gwenithic Gravity Well",
-    executableName: "Gwenithic Gravity Well",
+    name: packagedName,
+    executableName: packagedName,
     platform: "win32",
     arch: "x64",
     electronVersion: "43.3.0",
+    appVersion: runtimeManifest.version,
+    buildVersion: developmentBuild
+      ? `${runtimeManifest.version}.${commitBuildComponent}`
+      : runtimeManifest.version,
+    win32metadata: {
+      CompanyName: "Gwenithic",
+      FileDescription: packagedName,
+      ProductName: packagedName,
+      InternalName: packagedName,
+      OriginalFilename: `${packagedName}.exe`,
+    },
     icon: path.join(root, "assets", "icon.ico"),
     overwrite: true,
     prune: true,
@@ -102,6 +144,21 @@ for (const appPath of appPaths) {
   await fs.cp(path.join(root, "examples"), path.join(appPath, "examples"), { recursive: true });
   await fs.mkdir(path.join(appPath, "captures"), { recursive: true });
   await fs.mkdir(path.join(appPath, "data"), { recursive: true });
+  if (developmentBuild) {
+    const marker = [
+      "GWENITHIC GRAVITY WELL - DEVELOPMENT BUILD",
+      "",
+      `Build label: ${safeDevelopmentLabel}`,
+      `Artifact version: ${developmentArtifactVersion}`,
+      `Source branch: ${process.env.GW_SOURCE_BRANCH ?? "unknown"}`,
+      `Source commit: ${process.env.GW_SOURCE_COMMIT ?? "unknown"}`,
+      "",
+      "This body is an internal development observation. It does not replace the stable public release.",
+      "",
+    ].join("\n");
+    await fs.writeFile(path.join(appPath, "DEVELOPMENT-BUILD.txt"), marker, "utf8");
+    await fs.writeFile(path.join(appPath, "artifact.json"), developmentArtifactText, "utf8");
+  }
 }
 
 console.log(appPaths.join("\n"));

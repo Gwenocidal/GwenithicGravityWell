@@ -86,6 +86,10 @@ test("packager includes the field manual and writable portable folders", () => {
   assert.match(pack, /SOURCE-package\.json/);
   assert.match(pack, /delete runtimeManifest\.devDependencies/);
   assert.match(pack, /truthful runtime-only manifest/);
+  assert.match(pack, /GW_DEVELOPMENT_BUILD/);
+  assert.match(pack, /path\.join\(root, "release", "development"\)/);
+  assert.match(pack, /DEVELOPMENT-BUILD\.txt/);
+  assert.match(pack, /replaces_stable_release: false/);
   assert.match(pack, /captures/);
   assert.match(pack, /data/);
   for (const file of [
